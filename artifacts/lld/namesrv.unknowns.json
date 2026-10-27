@@ -1,0 +1,26 @@
+[
+  {
+    "id": "unknown:lld-namesrv-visibility",
+    "question": "Method visibility and framework annotations are not fully modelled; confirm public entry points with the maintainer.",
+    "impact": "medium",
+    "owner": "repo-owner"
+  },
+  {
+    "id": "unknown:lld-namesrv-states",
+    "question": "State transitions were not extracted; enums are listed but transitions need maintainer confirmation.",
+    "impact": "medium",
+    "owner": "repo-owner"
+  },
+  {
+    "id": "unknown:lld-namesrv-invariants",
+    "question": "Invariants were not extracted from validation/constraint evidence.",
+    "impact": "medium",
+    "owner": "repo-owner"
+  },
+  {
+    "id": "unknown:lld-namesrv-untraced-surfaces",
+    "question": "Entry-point-like operations without traced outgoing calls: start, main, run. Confirm whether calls are unresolved or the operation is a leaf.",
+    "impact": "medium",
+    "owner": "repo-owner"
+  }
+]

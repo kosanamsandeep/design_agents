@@ -1,0 +1,347 @@
+[
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/ShutdownHook.java#org.apache.rocketmq.broker.ShutdownHook",
+    "name": "ShutdownHook",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/ShutdownHook.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/ShutdownHook.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 19,
+          "end_line": 19,
+          "start_col": 17,
+          "end_col": 29
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/client/ConsumerIdsChangeListener.java#org.apache.rocketmq.broker.client.ConsumerIdsChangeListener",
+    "name": "ConsumerIdsChangeListener",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/client/ConsumerIdsChangeListener.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/client/ConsumerIdsChangeListener.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 19,
+          "end_line": 19,
+          "start_col": 17,
+          "end_col": 42
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/client/ProducerChangeListener.java#org.apache.rocketmq.broker.client.ProducerChangeListener",
+    "name": "ProducerChangeListener",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/client/ProducerChangeListener.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/client/ProducerChangeListener.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 24,
+          "end_line": 24,
+          "start_col": 17,
+          "end_col": 39
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/coldctr/ColdCtrStrategy.java#org.apache.rocketmq.broker.coldctr.ColdCtrStrategy",
+    "name": "ColdCtrStrategy",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/coldctr/ColdCtrStrategy.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/coldctr/ColdCtrStrategy.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 19,
+          "end_line": 19,
+          "start_col": 17,
+          "end_col": 32
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/lite/LiteCtlListener.java#org.apache.rocketmq.broker.lite.LiteCtlListener",
+    "name": "LiteCtlListener",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/lite/LiteCtlListener.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/lite/LiteCtlListener.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 20,
+          "end_line": 20,
+          "start_col": 17,
+          "end_col": 32
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/lite/LiteSharding.java#org.apache.rocketmq.broker.lite.LiteSharding",
+    "name": "LiteSharding",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/lite/LiteSharding.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/lite/LiteSharding.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 20,
+          "end_line": 20,
+          "start_col": 17,
+          "end_col": 29
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/lite/LiteSubscriptionRegistry.java#org.apache.rocketmq.broker.lite.LiteSubscriptionRegistry",
+    "name": "LiteSubscriptionRegistry",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/lite/LiteSubscriptionRegistry.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/lite/LiteSubscriptionRegistry.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 27,
+          "end_line": 27,
+          "start_col": 17,
+          "end_col": 41
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/mqtrace/ConsumeMessageHook.java#org.apache.rocketmq.broker.mqtrace.ConsumeMessageHook",
+    "name": "ConsumeMessageHook",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/mqtrace/ConsumeMessageHook.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/mqtrace/ConsumeMessageHook.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 19,
+          "end_line": 19,
+          "start_col": 17,
+          "end_col": 35
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/mqtrace/SendMessageHook.java#org.apache.rocketmq.broker.mqtrace.SendMessageHook",
+    "name": "SendMessageHook",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/mqtrace/SendMessageHook.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/mqtrace/SendMessageHook.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 19,
+          "end_line": 19,
+          "start_col": 17,
+          "end_col": 32
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/plugin/BrokerAttachedPlugin.java#org.apache.rocketmq.broker.plugin.BrokerAttachedPlugin",
+    "name": "BrokerAttachedPlugin",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/plugin/BrokerAttachedPlugin.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/plugin/BrokerAttachedPlugin.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 22,
+          "end_line": 22,
+          "start_col": 17,
+          "end_col": 37
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/plugin/PullMessageResultHandler.java#org.apache.rocketmq.broker.plugin.PullMessageResultHandler",
+    "name": "PullMessageResultHandler",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/plugin/PullMessageResultHandler.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/plugin/PullMessageResultHandler.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 29,
+          "end_line": 29,
+          "start_col": 17,
+          "end_col": 41
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/pop/PopConsumerKVStore.java#org.apache.rocketmq.broker.pop.PopConsumerKVStore",
+    "name": "PopConsumerKVStore",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/pop/PopConsumerKVStore.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/pop/PopConsumerKVStore.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 21,
+          "end_line": 21,
+          "start_col": 17,
+          "end_col": 35
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/pop/orderly/ConsumerOrderInfoManager.java#org.apache.rocketmq.broker.pop.orderly.ConsumerOrderInfoManager",
+    "name": "ConsumerOrderInfoManager",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/pop/orderly/ConsumerOrderInfoManager.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/pop/orderly/ConsumerOrderInfoManager.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 36,
+          "end_line": 36,
+          "start_col": 17,
+          "end_col": 41
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/processor/SendMessageCallback.java#org.apache.rocketmq.broker.processor.SendMessageCallback",
+    "name": "SendMessageCallback",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/processor/SendMessageCallback.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/processor/SendMessageCallback.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 23,
+          "end_line": 23,
+          "start_col": 17,
+          "end_col": 36
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:broker/src/main/java/org/apache/rocketmq/broker/transaction/TransactionalMessageService.java#org.apache.rocketmq.broker.transaction.TransactionalMessageService",
+    "name": "TransactionalMessageService",
+    "path": "broker/src/main/java/org/apache/rocketmq/broker/transaction/TransactionalMessageService.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "broker/src/main/java/org/apache/rocketmq/broker/transaction/TransactionalMessageService.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 26,
+          "end_line": 26,
+          "start_col": 17,
+          "end_col": 44
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  }
+]

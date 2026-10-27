@@ -1,0 +1,236 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.rocketmq.broker.processor;
+
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.FileRegion;
+import io.opentelemetry.api.common.Attributes;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.rocketmq.broker.BrokerController;
+import org.apache.rocketmq.broker.pagecache.OneMessageTransfer;
+import org.apache.rocketmq.broker.pagecache.QueryMessageTransfer;
+import org.apache.rocketmq.common.MixAll;
+import org.apache.rocketmq.common.constant.LoggerName;
+import org.apache.rocketmq.common.message.MessageConst;
+import org.apache.rocketmq.common.message.MessageDecoder;
+import org.apache.rocketmq.common.message.MessageExt;
+import org.apache.rocketmq.common.topic.TopicValidator;
+import org.apache.rocketmq.logging.org.slf4j.Logger;
+import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
+import org.apache.rocketmq.remoting.common.RemotingHelper;
+import org.apache.rocketmq.remoting.exception.RemotingCommandException;
+import org.apache.rocketmq.remoting.metrics.RemotingMetricsManager;
+import org.apache.rocketmq.remoting.netty.NettyRequestProcessor;
+import org.apache.rocketmq.remoting.protocol.RemotingCommand;
+import org.apache.rocketmq.remoting.protocol.RequestCode;
+import org.apache.rocketmq.remoting.protocol.ResponseCode;
+import org.apache.rocketmq.remoting.protocol.header.QueryMessageRequestHeader;
+import org.apache.rocketmq.remoting.protocol.header.QueryMessageResponseHeader;
+import org.apache.rocketmq.remoting.protocol.header.ViewMessageRequestHeader;
+import org.apache.rocketmq.store.QueryMessageResult;
+import org.apache.rocketmq.store.SelectMappedBufferResult;
+import org.apache.rocketmq.store.timer.TimerMessageStore;
+
+import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_REQUEST_CODE;
+import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESPONSE_CODE;
+import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESULT;
+
+public class QueryMessageProcessor implements NettyRequestProcessor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
+    private static final Set<String> REAL_TOPIC_STORAGE_TOPICS = new HashSet<>(Arrays.asList(
+        TopicValidator.RMQ_SYS_SCHEDULE_TOPIC,
+        TimerMessageStore.TIMER_TOPIC,
+        TopicValidator.RMQ_SYS_TRANS_HALF_TOPIC,
+        TopicValidator.RMQ_SYS_TRANS_CHECK_MAX_TIME_TOPIC));
+    private final BrokerController brokerController;
+
+    public QueryMessageProcessor(final BrokerController brokerController) {
+        this.brokerController = brokerController;
+    }
+
+    @Override
+    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
+        throws RemotingCommandException {
+        switch (request.getCode()) {
+            case RequestCode.QUERY_MESSAGE:
+                return this.queryMessage(ctx, request);
+            case RequestCode.VIEW_MESSAGE_BY_ID:
+                return this.viewMessageById(ctx, request);
+            default:
+                break;
+        }
+
+        return null;
+    }
+
+    public RemotingCommand queryMessage(ChannelHandlerContext ctx, RemotingCommand request)
+        throws RemotingCommandException {
+        final RemotingCommand response =
+            RemotingCommand.createResponseCommand(QueryMessageResponseHeader.class);
+        final QueryMessageResponseHeader responseHeader =
+            (QueryMessageResponseHeader) response.readCustomHeader();
+        final QueryMessageRequestHeader requestHeader =
+            (QueryMessageRequestHeader) request
+                .decodeCommandCustomHeader(QueryMessageRequestHeader.class);
+
+        response.setOpaque(request.getOpaque());
+        String indexType = requestHeader.getIndexType();
+        String lastKey = requestHeader.getLastKey();
+        String isUniqueKey = null;
+        if (null != request.getExtFields()) {
+            isUniqueKey = request.getExtFields().get(MixAll.UNIQUE_MSG_QUERY_FLAG);
+        }
+        if (!StringUtils.isEmpty(isUniqueKey) && Boolean.parseBoolean(isUniqueKey)) {
+            requestHeader.setMaxNum(this.brokerController.getMessageStoreConfig().getDefaultQueryMaxNum());
+            indexType = MessageConst.INDEX_UNIQUE_TYPE;
+        } else if (StringUtils.isEmpty(indexType)) {
+            indexType = MessageConst.INDEX_KEY_TYPE;
+        }
+        final QueryMessageResult queryMessageResult = this.brokerController.getMessageStore().queryMessage(requestHeader.getTopic(), requestHeader.getKey(), requestHeader.getMaxNum(), requestHeader.getBeginTimestamp(), requestHeader.getEndTimestamp(), indexType, lastKey);
+        assert queryMessageResult != null;
+
+        responseHeader.setIndexLastUpdatePhyoffset(queryMessageResult.getIndexLastUpdatePhyoffset());
+        responseHeader.setIndexLastUpdateTimestamp(queryMessageResult.getIndexLastUpdateTimestamp());
+
+        if (queryMessageResult.getBufferTotalSize() > 0) {
+            response.setCode(ResponseCode.SUCCESS);
+            response.setRemark(null);
+
+            try {
+                FileRegion fileRegion =
+                    new QueryMessageTransfer(response.encodeHeader(queryMessageResult
+                        .getBufferTotalSize()), queryMessageResult);
+                ctx.channel()
+                    .writeAndFlush(fileRegion)
+                    .addListener((ChannelFutureListener) future -> {
+                        queryMessageResult.release();
+                        RemotingMetricsManager remotingMetricsManager = brokerController.getBrokerMetricsManager().getRemotingMetricsManager();
+                        Attributes attributes = remotingMetricsManager.newAttributesBuilder()
+                            .put(LABEL_REQUEST_CODE, RemotingHelper.getRequestCodeDesc(request.getCode()))
+                            .put(LABEL_RESPONSE_CODE, RemotingHelper.getResponseCodeDesc(response.getCode()))
+                            .put(LABEL_RESULT, remotingMetricsManager.getWriteAndFlushResult(future))
+                            .build();
+                        remotingMetricsManager.getRpcLatency().record(request.getProcessTimer().elapsed(TimeUnit.MILLISECONDS), attributes);
+                        if (!future.isSuccess()) {
+                            LOGGER.error("transfer query message by page cache failed, ", future.cause());
+                        }
+                    });
+            } catch (Throwable e) {
+                LOGGER.error("", e);
+                queryMessageResult.release();
+            }
+
+            return null;
+        }
+
+        response.setCode(ResponseCode.QUERY_NOT_FOUND);
+        response.setRemark("can not find message, maybe time range not correct");
+        return response;
+    }
+
+    public RemotingCommand viewMessageById(ChannelHandlerContext ctx, RemotingCommand request)
+        throws RemotingCommandException {
+        final RemotingCommand response = RemotingCommand.createResponseCommand(null);
+        final ViewMessageRequestHeader requestHeader =
+            (ViewMessageRequestHeader) request.decodeCommandCustomHeader(ViewMessageRequestHeader.class);
+
+        response.setOpaque(request.getOpaque());
+
+        final SelectMappedBufferResult selectMappedBufferResult =
+            this.brokerController.getMessageStore().selectOneMessageByOffset(requestHeader.getOffset());
+        if (selectMappedBufferResult != null) {
+            if (StringUtils.isNotBlank(requestHeader.getTopic())) {
+                MessageExt message = MessageDecoder.decode(
+                    selectMappedBufferResult.getByteBuffer().duplicate(), false, false);
+                if (message == null) {
+                    selectMappedBufferResult.release();
+                    response.setCode(ResponseCode.SYSTEM_ERROR);
+                    response.setRemark("decode message by the offset failed");
+                    return response;
+                }
+                if (!matchesRequestTopic(requestHeader.getTopic(), message)) {
+                    selectMappedBufferResult.release();
+                    response.setCode(ResponseCode.NO_PERMISSION);
+                    response.setRemark("The topic does not match the message");
+                    return response;
+                }
+            }
+            response.setCode(ResponseCode.SUCCESS);
+            response.setRemark(null);
+
+            try {
+                FileRegion fileRegion =
+                    new OneMessageTransfer(response.encodeHeader(selectMappedBufferResult.getSize()),
+                        selectMappedBufferResult);
+                ctx.channel()
+                    .writeAndFlush(fileRegion)
+                    .addListener((ChannelFutureListener) future -> {
+                        selectMappedBufferResult.release();
+                        RemotingMetricsManager remotingMetricsManager = brokerController.getBrokerMetricsManager().getRemotingMetricsManager();
+                        Attributes attributes = remotingMetricsManager.newAttributesBuilder()
+                            .put(LABEL_REQUEST_CODE, RemotingHelper.getRequestCodeDesc(request.getCode()))
+                            .put(LABEL_RESPONSE_CODE, RemotingHelper.getResponseCodeDesc(response.getCode()))
+                            .put(LABEL_RESULT, remotingMetricsManager.getWriteAndFlushResult(future))
+                            .build();
+                        remotingMetricsManager.getRpcLatency().record(request.getProcessTimer().elapsed(TimeUnit.MILLISECONDS), attributes);
+                        if (!future.isSuccess()) {
+                            LOGGER.error("Transfer one message from page cache failed, ", future.cause());
+                        }
+                    });
+            } catch (Throwable e) {
+                LOGGER.error("", e);
+                selectMappedBufferResult.release();
+            }
+
+            return null;
+        } else {
+            response.setCode(ResponseCode.SYSTEM_ERROR);
+            response.setRemark("can not find message by the offset, " + requestHeader.getOffset());
+        }
+
+        return response;
+    }
+
+    private boolean matchesRequestTopic(String requestTopic, MessageExt message) {
+        String logicalTopic = message.getTopic();
+        if (REAL_TOPIC_STORAGE_TOPICS.contains(logicalTopic)) {
+            logicalTopic = message.getProperty(MessageConst.PROPERTY_REAL_TOPIC);
+        }
+        if (Objects.equals(requestTopic, logicalTopic)) {
+            return true;
+        }
+        if (MixAll.isLmq(requestTopic)
+            && StringUtils.isNotBlank(logicalTopic)
+            && MixAll.topicAllowsLMQ(logicalTopic)) {
+            String multiDispatch = message.getProperty(MessageConst.PROPERTY_INNER_MULTI_DISPATCH);
+            if (StringUtils.isNotBlank(multiDispatch)) {
+                for (String dispatchTopic : StringUtils.split(multiDispatch, MixAll.LMQ_DISPATCH_SEPARATOR)) {
+                    if (Objects.equals(requestTopic, dispatchTopic)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+}

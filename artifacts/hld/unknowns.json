@@ -1,0 +1,50 @@
+[
+  {
+    "id": "unknown:41094081",
+    "question": "SCIP symbol kinds not mapped to the evidence model: TypeParameter (120), UnspecifiedKind (6940), Variable (27073)",
+    "impact": "medium",
+    "owner": "platform"
+  },
+  {
+    "id": "unknown:701d092f",
+    "question": "703 test-source Java files were excluded from architecture evidence.",
+    "impact": "low",
+    "owner": "platform"
+  },
+  {
+    "id": "unknown:c4c31747",
+    "question": "tree-sitter reported parse errors in filter/src/main/java/org/apache/rocketmq/filter/parser/SelectorParser.java; syntax evidence may be incomplete.",
+    "impact": "medium",
+    "owner": "platform"
+  },
+  {
+    "id": "unknown:cbb8b3c8",
+    "question": "12 generated/build-output Java files were excluded from architecture evidence.",
+    "impact": "low",
+    "owner": "platform"
+  },
+  {
+    "id": "unknown:cea05bb8",
+    "question": "54023 call/new sites could not be resolved by unique name and were not emitted.",
+    "impact": "medium",
+    "owner": "platform"
+  },
+  {
+    "id": "unknown:data-stores",
+    "question": "No data-store/config evidence was extracted; confirm whether the system uses external stores or only local files.",
+    "impact": "medium",
+    "owner": "repo-owner"
+  },
+  {
+    "id": "unknown:external-systems",
+    "question": "No external systems or actors were identified; confirm upstream/downstream integrations.",
+    "impact": "medium",
+    "owner": "repo-owner"
+  },
+  {
+    "id": "unknown:example-entry-points",
+    "question": "196 example/test main methods are excluded from production entry-point selection.",
+    "impact": "low",
+    "owner": "repo-owner"
+  }
+]

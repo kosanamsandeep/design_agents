@@ -676,7 +676,7 @@ python -m legacy_lens.cli lld --model artifacts/code.graph.json \
                             <li><strong>HLD witnesses are samples.</strong> 67 files (4.3%) carry container/module-pair evidence; the source model has per-entity evidence.</li>
                             <li><strong>Edge Jaccard is low (0.095).</strong> The adapters cover different relations; the union is intentional, but it is not a quality metric.</li>
                             <li><strong>Agents are review-only.</strong> The write/refine loop needs a controlled branch, schema validation, and sign-off.</li>
-                            <li><strong>Artifacts are not committed.</strong> The 236 MB merged graph and 86 MB SCIP index are reproducible from the frozen commit and scripts.</li>
+                            <li><strong>Large artifacts are committed compressed.</strong> The merged graph, evidence models, and SCIP index are in <code>artifacts/published/*.gz</code>; the HLD/LLD JSON is browsable.</li>
                         </ul>
                     </section>
 
@@ -687,6 +687,7 @@ python -m legacy_lens.cli lld --model artifacts/code.graph.json \
                             <li><a href="../README.md">README</a> — overview, commands, first-slice results.</li>
                             <li><a href="../installations.md">installations.md</a> — exact versions, paths, and setup commands.</li>
                             <li><a href="run-2026-10-27-rocketmq.md">Run record</a> — full counts and caveats.</li>
+                            <li><a href="../artifacts/README.md">Published artifacts</a> — browsable HLD/LLD JSON and compressed evidence.</li>
                             <li><a href="agent-review-outcomes.md">Agent review outcomes</a> — findings and dispositions.</li>
                             <li><a href="evidence-schema.md">Evidence schema contract</a> · <a href="evidence-schema.v1.json">JSON Schema</a></li>
                             <li><a href="delivery-plan-status.html">Delivery plan &amp; status</a> — internal-only premise, 10-week plan.</li>

@@ -1,0 +1,416 @@
+[
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/ChannelEventListener.java#org.apache.rocketmq.remoting.ChannelEventListener",
+    "name": "ChannelEventListener",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/ChannelEventListener.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/ChannelEventListener.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 21,
+          "end_line": 21,
+          "start_col": 17,
+          "end_col": 37
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/CommandCallback.java#org.apache.rocketmq.remoting.CommandCallback",
+    "name": "CommandCallback",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/CommandCallback.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/CommandCallback.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 19,
+          "end_line": 19,
+          "start_col": 17,
+          "end_col": 32
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/CommandCustomHeader.java#org.apache.rocketmq.remoting.CommandCustomHeader",
+    "name": "CommandCustomHeader",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/CommandCustomHeader.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/CommandCustomHeader.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 21,
+          "end_line": 21,
+          "start_col": 17,
+          "end_col": 36
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/InvokeCallback.java#org.apache.rocketmq.remoting.InvokeCallback",
+    "name": "InvokeCallback",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/InvokeCallback.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/InvokeCallback.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 22,
+          "end_line": 22,
+          "start_col": 17,
+          "end_col": 31
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/RPCHook.java#org.apache.rocketmq.remoting.RPCHook",
+    "name": "RPCHook",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/RPCHook.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/RPCHook.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 22,
+          "end_line": 22,
+          "start_col": 17,
+          "end_col": 24
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/RemotingClient.java#org.apache.rocketmq.remoting.RemotingClient",
+    "name": "RemotingClient",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/RemotingClient.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/RemotingClient.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 30,
+          "end_line": 30,
+          "start_col": 17,
+          "end_col": 31
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/RemotingServer.java#org.apache.rocketmq.remoting.RemotingServer",
+    "name": "RemotingServer",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/RemotingServer.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/RemotingServer.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 28,
+          "end_line": 28,
+          "start_col": 17,
+          "end_col": 31
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/RemotingService.java#org.apache.rocketmq.remoting.RemotingService",
+    "name": "RemotingService",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/RemotingService.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/RemotingService.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 22,
+          "end_line": 22,
+          "start_col": 17,
+          "end_col": 32
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/annotation/CFNotNull.java#org.apache.rocketmq.remoting.annotation.CFNotNull",
+    "name": "CFNotNull",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/annotation/CFNotNull.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/annotation/CFNotNull.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 28,
+          "end_line": 28,
+          "start_col": 18,
+          "end_col": 27
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/annotation/CFNullable.java#org.apache.rocketmq.remoting.annotation.CFNullable",
+    "name": "CFNullable",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/annotation/CFNullable.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/annotation/CFNullable.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 28,
+          "end_line": 28,
+          "start_col": 18,
+          "end_col": 28
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/netty/NettyRequestProcessor.java#org.apache.rocketmq.remoting.netty.NettyRequestProcessor",
+    "name": "NettyRequestProcessor",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/netty/NettyRequestProcessor.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/netty/NettyRequestProcessor.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 25,
+          "end_line": 25,
+          "start_col": 17,
+          "end_col": 38
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/netty/RemotingResponseCallback.java#org.apache.rocketmq.remoting.netty.RemotingResponseCallback",
+    "name": "RemotingResponseCallback",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/netty/RemotingResponseCallback.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/netty/RemotingResponseCallback.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 22,
+          "end_line": 22,
+          "start_col": 17,
+          "end_col": 41
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/netty/TlsHelper.java#org.apache.rocketmq.remoting.netty.TlsHelper.DecryptionStrategy",
+    "name": "DecryptionStrategy",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/netty/TlsHelper.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/netty/TlsHelper.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 69,
+          "end_line": 69,
+          "start_col": 21,
+          "end_col": 39
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/pipeline/RequestPipeline.java#org.apache.rocketmq.remoting.pipeline.RequestPipeline",
+    "name": "RequestPipeline",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/pipeline/RequestPipeline.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/pipeline/RequestPipeline.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 23,
+          "end_line": 23,
+          "start_col": 17,
+          "end_col": 32
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/protocol/FastCodesHeader.java#org.apache.rocketmq.remoting.protocol.FastCodesHeader",
+    "name": "FastCodesHeader",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/FastCodesHeader.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/FastCodesHeader.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 26,
+          "end_line": 26,
+          "start_col": 17,
+          "end_col": 32
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/protocol/ForbiddenType.java#org.apache.rocketmq.remoting.protocol.ForbiddenType",
+    "name": "ForbiddenType",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/ForbiddenType.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/ForbiddenType.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 25,
+          "end_line": 25,
+          "start_col": 17,
+          "end_col": 30
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/RetryPolicy.java#org.apache.rocketmq.remoting.protocol.subscription.RetryPolicy",
+    "name": "RetryPolicy",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/RetryPolicy.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/RetryPolicy.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 20,
+          "end_line": 20,
+          "start_col": 17,
+          "end_col": 28
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  },
+  {
+    "id": "interface:java:remoting/src/main/java/org/apache/rocketmq/remoting/rpc/RpcClient.java#org.apache.rocketmq.remoting.rpc.RpcClient",
+    "name": "RpcClient",
+    "path": "remoting/src/main/java/org/apache/rocketmq/remoting/rpc/RpcClient.java",
+    "kind": "interface",
+    "evidence": [
+      {
+        "tool": "scip-java",
+        "tool_version": "0.13.2",
+        "type": "source_span",
+        "path": "remoting/src/main/java/org/apache/rocketmq/remoting/rpc/RpcClient.java",
+        "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+        "span": {
+          "start_line": 22,
+          "end_line": 22,
+          "start_col": 17,
+          "end_col": 26
+        },
+        "extractor": "scip-index"
+      }
+    ],
+    "note": "candidate seam; confirm DI/registration"
+  }
+]

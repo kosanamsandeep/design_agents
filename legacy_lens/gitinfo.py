@@ -13,11 +13,20 @@ def run_git(repo: str | Path, *args: str) -> str:
 
 
 def commit(repo: str | Path) -> str:
+    # A vendored test snapshot has no .git; the marker is authoritative.
+    marker = Path(repo) / ".lens-commit"
+    if marker.exists():
+        return marker.read_text(encoding="utf-8").strip()
     return run_git(repo, "rev-parse", "HEAD")
 
 
 def repo_root(repo: str | Path) -> str:
-    return run_git(repo, "rev-parse", "--show-toplevel")
+    if (Path(repo) / ".lens-commit").exists():
+        return str(Path(repo).resolve())
+    try:
+        return run_git(repo, "rev-parse", "--show-toplevel")
+    except Exception:
+        return str(Path(repo).resolve())
 
 
 def java_files(repo: str | Path, include_tests: bool = False) -> list[Path]:

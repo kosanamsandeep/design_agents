@@ -30,8 +30,9 @@ achieved, the last run metrics, review findings, limitations, and next steps.
 - [`apache/rocketmq`](https://github.com/apache/rocketmq)
 - Tag `rocketmq-all-5.5.1`
 - Commit `efa1be59d6fc747ad220f036c86030f05f0419f9`
-- 2,254 Java files in the checkout; 2,265 SCIP documents after the Maven build (includes
-  generated sources); 1,550 main-source files after the adapter filters.
+- Source snapshot vendored at `testdata/rocketmq` (`.lens-commit` = the pinned SHA); build
+  outputs are excluded. 2,254 Java files in the checkout; 2,265 SCIP documents after the Maven
+  build; 1,550 main-source files after the adapter filters.
 - Apache-2.0.
 
 ## Run it
@@ -82,12 +83,12 @@ Or step by step:
 
 Artifacts:
 
-- `artifacts/evidence.scip.json` — SCIP adapter output (internal, main-source only; external/import-only edges excluded by the CLI defaults)
-- `artifacts/evidence.treesitter.json` — tree-sitter output
-- `artifacts/code.graph.json` — merged evidence model (~236 MB)
-- `artifacts/hld/c4.model.json`, `artifacts/hld/hld.mmd` — HLD baseline
-- `artifacts/lld/namesrv.lld.json`, `broker.lld.json`, `remoting.lld.json` — LLD slices
+- `artifacts/hld/` — browsable HLD baseline, outline, unknowns, Mermaid, `hld.md`
+- `artifacts/lld/` — browsable LLD slices for `namesrv`, `broker`, `remoting`
 - `artifacts/manifest.json` — counts, versions, overlap, coverage
+- `artifacts/published/*.gz` — compressed SCIP index, SCIP/tree-sitter evidence, and merged graph;
+  `artifacts/README.md` explains each file and how to decompress it
+- `artifacts/published/SHA256SUMS` — integrity manifest
 
 Top HLD containers by class count: broker (890), proxy (503), remoting (398), store (341),
 client (312), common (285), tools (242), auth (220). Top module edges: broker→remoting

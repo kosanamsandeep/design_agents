@@ -78,6 +78,9 @@ git clone --depth 1 --branch rocketmq-all-5.5.1 \
   https://github.com/apache/rocketmq.git testdata/rocketmq
 cd testdata/rocketmq
 git rev-parse HEAD   # efa1be59d6fc747ad220f036c86030f05f0419f9
+
+# The committed repo may instead contain a source snapshot with no .git.
+# In that case .lens-commit records the pinned SHA and the adapters use it.
 ```
 
 ### 6. Generate the SCIP index
@@ -137,6 +140,7 @@ Outputs:
 | `artifacts/hld/hld.mmd` | Mermaid rendering of the HLD |
 | `artifacts/lld/<module>.lld.json` | per-context LLD baseline |
 | `artifacts/manifest.json` | counts, versions, overlap, coverage |
+| `artifacts/published/*.gz` | compressed SCIP index, evidence, and merged graph; see `artifacts/README.md` |
 
 First-slice counts: 34,010 SCIP entities / 86,517 edges; 31,040 tree-sitter entities / 33,574
 edges; 38,789 merged entities / 109,647 edges; 16 containers; 40 HLD edges; `namesrv` LLD

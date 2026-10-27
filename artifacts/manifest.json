@@ -1,0 +1,67 @@
+{
+  "repository": {
+    "commit": "efa1be59d6fc747ad220f036c86030f05f0419f9",
+    "root": "/home/sande/workspace/design_agents/testdata/rocketmq",
+    "vcs": "git",
+    "languages": [
+      "java"
+    ],
+    "tool_versions": {
+      "scip-java": "0.13.2",
+      "tree-sitter": "tree-sitter-0.25.2/tree-sitter-java-0.23.5"
+    }
+  },
+  "generated_at": "2026-10-27T07:08:41Z",
+  "elapsed_seconds": 42.97,
+  "artifacts": {
+    "scip": "artifacts/evidence.scip.json",
+    "treesitter": "artifacts/evidence.treesitter.json",
+    "graph": "artifacts/code.graph.json",
+    "hld": "artifacts/hld/c4.model.json",
+    "lld": "artifacts/lld"
+  },
+  "counts": {
+    "scip_entities": 34010,
+    "scip_edges": 86517,
+    "treesitter_entities": 31040,
+    "treesitter_edges": 33574,
+    "merged_entities": 38789,
+    "merged_edges": 109647,
+    "hld_containers": 16,
+    "lld": {
+      "namesrv": {
+        "classes": 34,
+        "flows": 10,
+        "edges": 500
+      },
+      "broker": {
+        "classes": 81,
+        "flows": 10,
+        "edges": 500
+      },
+      "remoting": {
+        "classes": 64,
+        "flows": 5,
+        "edges": 500
+      }
+    }
+  },
+  "overlap": {
+    "entities_a": 34010,
+    "entities_b": 31040,
+    "entities_common": 26261,
+    "entity_jaccard": 0.6770218360875506,
+    "edges_a": 86517,
+    "edges_b": 33574,
+    "edges_common": 10444,
+    "edge_jaccard": 0.09525112406176184
+  },
+  "coverage": {
+    "files_total": 1550,
+    "files_analyzed": 1549,
+    "files_skipped": 1,
+    "entry_points_identified": 219,
+    "data_stores_identified": 0,
+    "unknowns_count": 5
+  }
+}

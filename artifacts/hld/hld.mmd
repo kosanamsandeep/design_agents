@@ -1,0 +1,47 @@
+flowchart LR
+    auth["auth<br/>220 classes · 769 methods<br/>library/module · 0 entry"]
+    broker["broker<br/>890 classes · 3240 methods<br/>deployable · 1 entry"]
+    client["client<br/>312 classes · 3313 methods<br/>library/module · 0 entry"]
+    common["common<br/>285 classes · 2492 methods<br/>deployable · 2 entry"]
+    container["container<br/>12 classes · 159 methods<br/>deployable · 3 entry"]
+    controller["controller<br/>166 classes · 611 methods<br/>deployable · 1 entry"]
+    example["example<br/>98 classes · 456 methods<br/>library/module · 0 entry"]
+    filter["filter<br/>36 classes · 488 methods<br/>library/module · 0 entry"]
+    namesrv["namesrv<br/>34 classes · 226 methods<br/>deployable · 1 entry"]
+    openmessaging["openmessaging<br/>53 classes · 279 methods<br/>library/module · 0 entry"]
+    proxy["proxy<br/>503 classes · 2483 methods<br/>deployable · 5 entry"]
+    remoting["remoting<br/>398 classes · 3911 methods<br/>library/module · 0 entry"]
+    srvutil["srvutil<br/>6 classes · 27 methods<br/>library/module · 0 entry"]
+    store["store<br/>341 classes · 4280 methods<br/>library/module · 0 entry"]
+    tieredstore["tieredstore<br/>108 classes · 826 methods<br/>library/module · 0 entry"]
+    tools["tools<br/>242 classes · 1920 methods<br/>deployable · 10 entry"]
+    broker -->|"7840 / 4234w"| remoting
+    broker -->|"6667 / 4052w"| common
+    client -->|"5214 / 3682w"| remoting
+    client -->|"3668 / 2216w"| common
+    tools -->|"3488 / 1651w"| client
+    store -->|"3335 / 2050w"| common
+    broker -->|"2884 / 1746w"| store
+    tools -->|"2606 / 1878w"| remoting
+    broker -->|"2288 / 825w"| client
+    proxy -->|"1803 / 1236w"| remoting
+    proxy -->|"1586 / 881w"| client
+    proxy -->|"1472 / 1028w"| common
+    remoting -->|"1261 / 1014w"| common
+    store -->|"1151 / 583w"| client
+    example -->|"1093 / 740w"| client
+    remoting -->|"1090 / 663w"| client
+    namesrv -->|"1051 / 674w"| remoting
+    tools -->|"924 / 589w"| common
+    controller -->|"897 / 595w"| remoting
+    common -->|"883 / 471w"| client
+    store -->|"438 / 306w"| remoting
+    tieredstore -->|"438 / 273w"| store
+    auth -->|"434 / 250w"| common
+    auth -->|"414 / 229w"| client
+    controller -->|"352 / 206w"| common
+    tieredstore -->|"347 / 162w"| client
+    auth -->|"329 / 186w"| remoting
+    proxy -->|"298 / 245w"| broker
+    controller -->|"283 / 138w"| client
+    example -->|"265 / 215w"| common

@@ -1,0 +1,567 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.rocketmq.store.queue;
+
+import java.io.File;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.io.FileUtils;
+import org.apache.rocketmq.common.MixAll;
+import org.apache.rocketmq.common.TopicConfig;
+import org.apache.rocketmq.common.UtilAll;
+import org.apache.rocketmq.common.attribute.CQType;
+import org.apache.rocketmq.common.attribute.TopicMessageType;
+import org.apache.rocketmq.common.constant.PermName;
+import org.apache.rocketmq.common.message.MessageConst;
+import org.apache.rocketmq.common.message.MessageExtBrokerInner;
+import org.apache.rocketmq.store.ConsumeQueue;
+import org.apache.rocketmq.store.DefaultMessageStore;
+import org.apache.rocketmq.store.DispatchRequest;
+import org.apache.rocketmq.store.StoreType;
+import org.apache.rocketmq.store.config.MessageStoreConfig;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import static org.apache.rocketmq.common.TopicFilterType.SINGLE_TAG;
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+
+@RunWith(MockitoJUnitRunner.class)
+public class CombineConsumeQueueStoreTest extends QueueTestBase {
+    private DefaultMessageStore messageStore;
+    private MessageStoreConfig messageStoreConfig;
+    private ConcurrentMap<String, TopicConfig> topicConfigTableMap;
+
+    String topic = UUID.randomUUID().toString();
+    final int queueId = 0;
+    final int msgNum = 100;
+    final int msgSize = 1000;
+
+    @Before
+    public void init() throws Exception {
+        this.topicConfigTableMap = new ConcurrentHashMap<>();
+        messageStoreConfig = new MessageStoreConfig();
+    }
+
+    @After
+    public void destroy() {
+        if (!messageStore.isShutdown()) {
+            messageStore.shutdown();
+        }
+        messageStore.destroy();
+
+        File file = new File(messageStore.getMessageStoreConfig().getStorePathRootDir());
+        UtilAll.deleteFile(file);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void CombineConsumeQueueStore_EmptyLoadingCQTypes_ThrowsException() throws Exception {
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+
+        messageStoreConfig.setCombineCQLoadingCQTypes("");
+        new CombineConsumeQueueStore(messageStore);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void CombineConsumeQueueStore_LoadingCQTypesNotContainsRocksdb_ThrowsException() throws Exception {
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+
+        messageStoreConfig.setCombineCQLoadingCQTypes(StoreType.DEFAULT.getStoreType());
+        messageStoreConfig.setCombineCQUseRocksdbForLmq(true);
+        new CombineConsumeQueueStore(messageStore);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void CombineConsumeQueueStore_assignOffsetStoreIsRocksdb_ThrowsException() throws Exception {
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+
+        messageStoreConfig.setCombineCQUseRocksdbForLmq(true);
+        messageStoreConfig.setCombineAssignOffsetCQType(StoreType.DEFAULT_ROCKSDB.getStoreType());
+        new CombineConsumeQueueStore(messageStore);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void CombineConsumeQueueStore_selectiveDoubleWrite_assignOffsetStoreIsRocksdb_ThrowsException() throws Exception {
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+
+        messageStoreConfig.setRocksdbCQSelectiveDoubleWriteEnable(true);
+        messageStoreConfig.setCombineAssignOffsetCQType(StoreType.DEFAULT_ROCKSDB.getStoreType());
+        new CombineConsumeQueueStore(messageStore);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void CombineConsumeQueueStore_selectiveDoubleWrite_readStoreIsRocksdb_ThrowsException() throws Exception {
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+
+        messageStoreConfig.setRocksdbCQSelectiveDoubleWriteEnable(true);
+        messageStoreConfig.setCombineCQPreferCQType(StoreType.DEFAULT_ROCKSDB.getStoreType());
+        new CombineConsumeQueueStore(messageStore);
+    }
+
+    @Test
+    public void CombineConsumeQueueStore_InitializesConsumeQueueStore() throws Exception {
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+        {
+            messageStoreConfig.setCombineCQLoadingCQTypes("default");
+            messageStoreConfig.setCombineCQPreferCQType("default");
+            CombineConsumeQueueStore store = new CombineConsumeQueueStore(messageStore);
+            assertNotNull(store.getConsumeQueueStore());
+            assertNull(store.getRocksDBConsumeQueueStore());
+        }
+
+        {
+            messageStoreConfig.setCombineCQLoadingCQTypes("defaultRocksDB");
+            messageStoreConfig.setCombineCQPreferCQType("defaultRocksDB");
+            messageStoreConfig.setCombineAssignOffsetCQType("defaultRocksDB");
+            CombineConsumeQueueStore store = new CombineConsumeQueueStore(messageStore);
+            assertNull(store.getConsumeQueueStore());
+            assertNotNull(store.getRocksDBConsumeQueueStore());
+            assertTrue(store.getCurrentReadStore() instanceof RocksDBConsumeQueueStore);
+        }
+
+        {
+            messageStoreConfig.setCombineCQLoadingCQTypes(";;default;defaultRocksDB;");
+            messageStoreConfig.setCombineCQPreferCQType("defaultRocksDB");
+            CombineConsumeQueueStore store = new CombineConsumeQueueStore(messageStore);
+            assertNotNull(store.getConsumeQueueStore());
+            assertNotNull(store.getRocksDBConsumeQueueStore());
+            assertTrue(store.getCurrentReadStore() instanceof RocksDBConsumeQueueStore);
+        }
+
+        {
+            messageStoreConfig.setCombineCQLoadingCQTypes("default;defaultRocksDB");
+            messageStoreConfig.setCombineCQPreferCQType("defaultRocksDB");
+            CombineConsumeQueueStore store = new CombineConsumeQueueStore(messageStore);
+            assertTrue(store.getCurrentReadStore() instanceof RocksDBConsumeQueueStore);
+        }
+
+    }
+
+    @Test
+    public void testIterator() throws Exception {
+        messageStoreConfig.setRocksdbCQDoubleWriteEnable(true);
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+        messageStore.load();
+        messageStore.start();
+
+        //The initial min max offset, before and after the creation of consume queue
+        assertEquals(0, messageStore.getMaxOffsetInQueue(topic, queueId));
+        assertEquals(0, messageStore.getMinOffsetInQueue(topic, queueId));
+
+        ConsumeQueueInterface consumeQueue = messageStore.getConsumeQueue(topic, queueId);
+        assertEquals(CQType.SimpleCQ, consumeQueue.getCQType());
+        assertEquals(0, consumeQueue.getMaxOffsetInQueue());
+        assertEquals(0, consumeQueue.getMinOffsetInQueue());
+        assertEquals(0, messageStore.getMaxOffsetInQueue(topic, queueId));
+        assertEquals(0, messageStore.getMinOffsetInQueue(topic, queueId));
+
+        for (int i = 0; i < msgNum; i++) {
+            DispatchRequest request = new DispatchRequest(topic, queueId, i * msgSize, msgSize, i,
+                System.currentTimeMillis(), i, null, null, 0, 0, null);
+            messageStore.getQueueStore().putMessagePositionInfoWrapper(request);
+        }
+
+        await().atMost(1, TimeUnit.SECONDS).untilAsserted(() -> {
+            checkCQ(consumeQueue, msgNum, msgSize);
+
+            CombineConsumeQueueStore combineConsumeQueueStore = (CombineConsumeQueueStore) messageStore.getQueueStore();
+            ConsumeQueueInterface rocksDBConsumeQueue = combineConsumeQueueStore.getRocksDBConsumeQueueStore().getConsumeQueue(topic, queueId);
+            assertEquals(CQType.RocksDBCQ, rocksDBConsumeQueue.getCQType());
+            assertEquals(msgNum, rocksDBConsumeQueue.getMaxOffsetInQueue());
+            checkCQ(rocksDBConsumeQueue, msgNum, msgSize);
+        });
+    }
+
+    @Test
+    public void testIterator_combineCQUseRocksdbForLmq() throws Exception {
+        messageStoreConfig.setRocksdbCQDoubleWriteEnable(true);
+        messageStoreConfig.setCombineCQUseRocksdbForLmq(true);
+        messageStoreConfig.setEnableLmq(true);
+        messageStoreConfig.setEnableMultiDispatch(true);
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+        messageStore.load();
+        messageStore.start();
+
+        String lmqName = MixAll.LMQ_PREFIX + UUID.randomUUID();
+        assertEquals(0, messageStore.getMaxOffsetInQueue(lmqName, queueId));
+        assertEquals(0, messageStore.getMinOffsetInQueue(lmqName, queueId));
+
+        ConsumeQueueInterface consumeQueue = messageStore.getConsumeQueue(lmqName, queueId);
+        assertEquals(CQType.RocksDBCQ, consumeQueue.getCQType());
+        assertEquals(0, consumeQueue.getMaxOffsetInQueue());
+        assertEquals(0, consumeQueue.getMinOffsetInQueue());
+        assertEquals(0, messageStore.getMaxOffsetInQueue(lmqName, queueId));
+        assertEquals(0, messageStore.getMinOffsetInQueue(lmqName, queueId));
+
+        for (int i = 0; i < msgNum; i++) {
+            Map<String, String> propertyMap = new HashMap<>();
+            propertyMap.put(MessageConst.PROPERTY_INNER_MULTI_DISPATCH, lmqName);
+            propertyMap.put(MessageConst.PROPERTY_INNER_MULTI_QUEUE_OFFSET, String.valueOf(i));
+            DispatchRequest request = new DispatchRequest(topic, queueId, i * msgSize, msgSize, i,
+                System.currentTimeMillis(), i, null, null, 0, 0, propertyMap);
+            messageStore.getQueueStore().putMessagePositionInfoWrapper(request);
+        }
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            checkCQ(consumeQueue, msgNum, msgSize);
+
+            CombineConsumeQueueStore combineConsumeQueueStore = (CombineConsumeQueueStore) messageStore.getQueueStore();
+            ConsumeQueueInterface rocksDBConsumeQueue = combineConsumeQueueStore.getRocksDBConsumeQueueStore().getConsumeQueue(lmqName, queueId);
+            ConsumeQueueInterface fileConsumeQueue = combineConsumeQueueStore.getConsumeQueueStore().getConsumeQueue(lmqName, queueId);
+
+            assertEquals(consumeQueue, rocksDBConsumeQueue);
+            assertNull(fileConsumeQueue); // not exist in file CQ store
+            assertEquals(msgNum, rocksDBConsumeQueue.getMaxOffsetInQueue());
+        });
+    }
+
+    private void checkCQ(ConsumeQueueInterface consumeQueue, int msgNum,
+        int msgSize) {
+        assertEquals(0, consumeQueue.getMinLogicOffset());
+        assertEquals(0, consumeQueue.getMinOffsetInQueue());
+        assertEquals(msgNum, consumeQueue.getMaxOffsetInQueue());
+        assertEquals(msgNum, consumeQueue.getMessageTotalInQueue());
+
+        assertNull(consumeQueue.iterateFrom(-1));
+        assertNull(consumeQueue.iterateFrom(msgNum));
+
+        {
+            CqUnit first = consumeQueue.getEarliestUnit();
+            assertNotNull(first);
+            assertEquals(0, first.getQueueOffset());
+            assertEquals(msgSize, first.getSize());
+            assertTrue(first.isTagsCodeValid());
+        }
+        {
+            CqUnit last = consumeQueue.getLatestUnit();
+            assertNotNull(last);
+            assertEquals(msgNum - 1, last.getQueueOffset());
+            assertEquals(msgSize, last.getSize());
+            assertTrue(last.isTagsCodeValid());
+        }
+
+        for (int i = 0; i < msgNum; i++) {
+            ReferredIterator<CqUnit> iterator = consumeQueue.iterateFrom(i);
+            assertNotNull(iterator);
+            long queueOffset = i;
+            while (iterator.hasNext()) {
+                CqUnit cqUnit = iterator.next();
+                assertEquals(queueOffset, cqUnit.getQueueOffset());
+                assertEquals(queueOffset * msgSize, cqUnit.getPos());
+                assertEquals(msgSize, cqUnit.getSize());
+                assertTrue(cqUnit.isTagsCodeValid());
+                assertEquals(queueOffset, cqUnit.getTagsCode());
+                assertEquals(queueOffset, cqUnit.getValidTagsCodeAsLong().longValue());
+                assertEquals(1, cqUnit.getBatchNum());
+                assertNull(cqUnit.getCqExtUnit());
+                queueOffset++;
+            }
+            assertEquals(msgNum, queueOffset);
+        }
+    }
+
+    @Test
+    public void testInitializeWithOffset() throws Exception {
+        final String path = createBaseDir();
+        FileUtils.deleteDirectory(new File(path));
+        topicConfigTableMap.put(topic, new TopicConfig(topic, 1, 1, PermName.PERM_WRITE | PermName.PERM_READ));
+
+        {
+            messageStoreConfig.setRocksdbCQDoubleWriteEnable(true);
+            messageStore = (DefaultMessageStore) createMessageStore(path, false, topicConfigTableMap, messageStoreConfig);
+            messageStore.load();
+
+            ConsumeQueueStoreInterface consumeQueueStoreInterface = messageStore.getQueueStore();
+            assertTrue(consumeQueueStoreInterface instanceof CombineConsumeQueueStore);
+            CombineConsumeQueueStore combineConsumeQueueStore = (CombineConsumeQueueStore) consumeQueueStoreInterface;
+            ConsumeQueueStore consumeQueueStore = combineConsumeQueueStore.getConsumeQueueStore();
+            RocksDBConsumeQueueStore rocksDBConsumeQueueStore = combineConsumeQueueStore.getRocksDBConsumeQueueStore();
+            assertNotNull(consumeQueueStore);
+            assertNotNull(rocksDBConsumeQueueStore);
+
+            ConsumeQueueInterface rocksDBConsumeQueue = rocksDBConsumeQueueStore.findOrCreateConsumeQueue(topic, queueId);
+            consumeQueueStore.findOrCreateConsumeQueue(topic, queueId);
+            rocksDBConsumeQueue.initializeWithOffset(100, 0);
+
+            assertEquals(100, rocksDBConsumeQueue.getMaxOffsetInQueue());
+            assertEquals(100, rocksDBConsumeQueue.getMinOffsetInQueue());
+
+            rocksDBConsumeQueue.initializeWithOffset(200, 0);
+
+            assertEquals(200, rocksDBConsumeQueue.getMaxOffsetInQueue());
+            assertEquals(200, rocksDBConsumeQueue.getMinOffsetInQueue());
+
+            messageStore.start();
+
+            assertEquals(0, rocksDBConsumeQueue.getMaxOffsetInQueue());
+            assertEquals(0, rocksDBConsumeQueue.getMinOffsetInQueue());
+
+            ConsumeQueue consumeQueue = (ConsumeQueue) consumeQueueStore.findOrCreateConsumeQueue(topic, queueId);
+
+            for (int i = 0; i < msgNum; i++) {
+                MessageExtBrokerInner msg = new MessageExtBrokerInner();
+
+                msg.setQueueId(queueId);
+                msg.setBody(new byte[msgSize]);
+                msg.setTopic(topic);
+                msg.setTags("TAG1");
+
+                msg.setTagsCode(MessageExtBrokerInner.tagsString2tagsCode(SINGLE_TAG, msg.getTags()));
+                msg.setBornTimestamp(System.currentTimeMillis());
+                msg.setReconsumeTimes(0);
+
+                msg.setBornHost(new InetSocketAddress(9999));
+                msg.setStoreHost(new InetSocketAddress(8888));
+
+                messageStore.putMessage(msg);
+            }
+
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+                assertEquals(msgNum, consumeQueue.getMaxOffsetInQueue());
+                assertEquals(0, consumeQueue.getMinOffsetInQueue());
+            });
+
+            messageStore.shutdown();
+        }
+
+        {
+            messageStoreConfig.setRocksdbCQDoubleWriteEnable(true);
+            messageStore = (DefaultMessageStore) createMessageStore(path, false, topicConfigTableMap, messageStoreConfig);
+            messageStore.load();
+
+            ConsumeQueueStoreInterface consumeQueueStoreInterface = messageStore.getQueueStore();
+            assertTrue(consumeQueueStoreInterface instanceof CombineConsumeQueueStore);
+            CombineConsumeQueueStore combineConsumeQueueStore = (CombineConsumeQueueStore) consumeQueueStoreInterface;
+            ConsumeQueueStore consumeQueueStore = combineConsumeQueueStore.getConsumeQueueStore();
+            RocksDBConsumeQueueStore rocksDBConsumeQueueStore = combineConsumeQueueStore.getRocksDBConsumeQueueStore();
+            assertNotNull(consumeQueueStore);
+            assertNotNull(rocksDBConsumeQueueStore);
+
+            consumeQueueStore.findOrCreateConsumeQueue(topic, queueId).initializeWithOffset(200, 0);
+
+            ConsumeQueueInterface cq = rocksDBConsumeQueueStore.findOrCreateConsumeQueue(topic, queueId);
+            assertEquals(msgNum, cq.getMaxOffsetInQueue());
+            assertEquals(0, cq.getMinOffsetInQueue());
+
+            combineConsumeQueueStore.verifyAndInitOffsetForAllStore(true);
+
+            assertEquals(200, cq.getMaxOffsetInQueue());
+            assertEquals(200, cq.getMinOffsetInQueue());
+
+            messageStore.shutdown();
+        }
+    }
+
+    @Test
+    public void testVerifyAndInitOffsetForAllStore() throws Exception {
+        final String path = createBaseDir();
+        topicConfigTableMap.put(topic, new TopicConfig(topic, 1, 1, PermName.PERM_WRITE | PermName.PERM_READ));
+
+        {
+            messageStoreConfig.setRocksdbCQDoubleWriteEnable(false);
+            messageStore = (DefaultMessageStore) createMessageStore(path, false, topicConfigTableMap, messageStoreConfig);
+            messageStore.load();
+            messageStore.start();
+
+            assertTrue(messageStore.getQueueStore() instanceof ConsumeQueueStore);
+
+            for (int i = 0; i < msgNum; i++) {
+                MessageExtBrokerInner msg = new MessageExtBrokerInner();
+
+                msg.setQueueId(queueId);
+                msg.setBody(new byte[msgSize]);
+                msg.setTopic(topic);
+                msg.setTags("TAG1");
+
+                msg.setTagsCode(MessageExtBrokerInner.tagsString2tagsCode(SINGLE_TAG, msg.getTags()));
+                msg.setBornTimestamp(System.currentTimeMillis());
+                msg.setReconsumeTimes(0);
+
+                msg.setBornHost(new InetSocketAddress(9999));
+                msg.setStoreHost(new InetSocketAddress(8888));
+
+                messageStore.putMessage(msg);
+            }
+
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+                File cq = new File(path + File.separator + "consumequeue" + File.separator + topic + File.separator + queueId + File.separator + "00000000000000000000");
+                assertTrue(cq.exists());
+                assertEquals(msgNum, (long) messageStore.getQueueStore().getMaxOffset(topic, queueId));
+                assertEquals(0, messageStore.getQueueStore().getMinOffsetInQueue(topic, queueId));
+            });
+
+            messageStore.shutdown();
+        }
+
+        {
+            messageStoreConfig.setRocksdbCQDoubleWriteEnable(true);
+            messageStore = (DefaultMessageStore) createMessageStore(path, false, topicConfigTableMap, messageStoreConfig);
+            messageStore.load();
+            await().atMost(1, TimeUnit.SECONDS).untilAsserted(() -> {
+                assertTrue(((CombineConsumeQueueStore) messageStore.getQueueStore()).verifyAndInitOffsetForAllStore(false));
+            });
+            messageStore.start();
+            messageStore.shutdown();
+        }
+
+        {
+            messageStoreConfig.setRocksdbCQDoubleWriteEnable(true);
+            messageStore = (DefaultMessageStore) createMessageStore(path, false, topicConfigTableMap, messageStoreConfig);
+            messageStore.load();
+            await().atMost(1, TimeUnit.SECONDS).untilAsserted(() -> {
+                assertTrue(((CombineConsumeQueueStore) messageStore.getQueueStore()).verifyAndInitOffsetForAllStore(false));
+            });
+            messageStore.start();
+            messageStore.shutdown();
+        }
+    }
+
+    @Test
+    public void testLmqOffset_combineCQUseRocksdbForLmq() throws Exception {
+        messageStoreConfig.setRocksdbCQDoubleWriteEnable(true);
+        messageStoreConfig.setCombineCQUseRocksdbForLmq(true);
+        messageStoreConfig.setEnableLmq(true);
+        messageStoreConfig.setEnableMultiDispatch(true);
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+        messageStore.load();
+        messageStore.start();
+        CombineConsumeQueueStore combineConsumeQueueStore = (CombineConsumeQueueStore) messageStore.getQueueStore();
+        ConsumeQueueStore consumeQueueStore = combineConsumeQueueStore.getConsumeQueueStore();
+        RocksDBConsumeQueueStore rocksDBConsumeQueueStore = combineConsumeQueueStore.getRocksDBConsumeQueueStore();
+
+        String lmqName = MixAll.LMQ_PREFIX + UUID.randomUUID();
+        assertEquals(0, combineConsumeQueueStore.getLmqQueueOffset(lmqName, queueId));
+        assertEquals(0, consumeQueueStore.getLmqQueueOffset(lmqName, queueId));
+        assertEquals(0, rocksDBConsumeQueueStore.getLmqQueueOffset(lmqName, queueId));
+
+        combineConsumeQueueStore.increaseLmqOffset(lmqName, queueId, (short) 100);
+        assertEquals(100, combineConsumeQueueStore.getLmqQueueOffset(lmqName, queueId));
+        assertEquals(0, consumeQueueStore.getLmqQueueOffset(lmqName, queueId));
+        assertEquals(100, rocksDBConsumeQueueStore.getLmqQueueOffset(lmqName, queueId));
+    }
+
+    @Test
+    public void testLmqNum_combineCQUseRocksdbForLmq() throws Exception {
+        messageStoreConfig.setRocksdbCQDoubleWriteEnable(true);
+        messageStoreConfig.setCombineCQUseRocksdbForLmq(true);
+        messageStoreConfig.setEnableLmq(true);
+        messageStoreConfig.setEnableMultiDispatch(true);
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+        messageStore.load();
+        messageStore.start();
+        CombineConsumeQueueStore combineConsumeQueueStore = (CombineConsumeQueueStore) messageStore.getQueueStore();
+        ConsumeQueueStore consumeQueueStore = combineConsumeQueueStore.getConsumeQueueStore();
+        RocksDBConsumeQueueStore rocksDBConsumeQueueStore = combineConsumeQueueStore.getRocksDBConsumeQueueStore();
+
+        String lmqName = MixAll.LMQ_PREFIX + UUID.randomUUID();
+        assertEquals(0, combineConsumeQueueStore.getLmqNum());
+        assertEquals(0, rocksDBConsumeQueueStore.getLmqNum());
+        assertEquals(0, consumeQueueStore.getLmqNum());
+        assertFalse(combineConsumeQueueStore.isLmqExist(lmqName));
+        assertFalse(rocksDBConsumeQueueStore.isLmqExist(lmqName));
+        assertFalse(consumeQueueStore.isLmqExist(lmqName));
+
+        for (int i = 0; i < msgNum; i++) {
+            Map<String, String> propertyMap = new HashMap<>();
+            propertyMap.put(MessageConst.PROPERTY_INNER_MULTI_DISPATCH, lmqName);
+            propertyMap.put(MessageConst.PROPERTY_INNER_MULTI_QUEUE_OFFSET, String.valueOf(i));
+            DispatchRequest request = new DispatchRequest(topic, queueId, i * msgSize, msgSize, i,
+                System.currentTimeMillis(), i, null, null, 0, 0, propertyMap);
+            messageStore.getQueueStore().putMessagePositionInfoWrapper(request);
+        }
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertEquals(1, combineConsumeQueueStore.getLmqNum());
+            assertEquals(1, rocksDBConsumeQueueStore.getLmqNum());
+            assertEquals(0, consumeQueueStore.getLmqNum());
+
+            assertTrue(combineConsumeQueueStore.isLmqExist(lmqName));
+            assertTrue(rocksDBConsumeQueueStore.isLmqExist(lmqName));
+            assertFalse(consumeQueueStore.isLmqExist(lmqName));
+        });
+    }
+
+    @Test
+    public void testSelectiveDoubleWrite() throws Exception {
+        messageStoreConfig.setRocksdbCQDoubleWriteEnable(true);
+        messageStoreConfig.setRocksdbCQSelectiveDoubleWriteEnable(true);
+        messageStore = (DefaultMessageStore) createMessageStore(null, false, topicConfigTableMap, messageStoreConfig);
+        messageStore.load();
+        messageStore.start();
+        CombineConsumeQueueStore combineConsumeQueueStore = (CombineConsumeQueueStore) messageStore.getQueueStore();
+        ConsumeQueueStore consumeQueueStore = combineConsumeQueueStore.getConsumeQueueStore();
+        RocksDBConsumeQueueStore rocksDBConsumeQueueStore = combineConsumeQueueStore.getRocksDBConsumeQueueStore();
+
+        String liteTopic = "LiteTopic";
+        String normalTopic = "NormalTopic";
+        String retryTopic = MixAll.RETRY_GROUP_TOPIC_PREFIX + "CID_GROUP" + "+" + normalTopic;
+
+        topicConfigTableMap.put(liteTopic, new TopicConfig(liteTopic, 1, 1, PermName.PERM_WRITE | PermName.PERM_READ));
+        topicConfigTableMap.get(liteTopic).setTopicMessageType(TopicMessageType.LITE);
+        topicConfigTableMap.put(normalTopic, new TopicConfig(normalTopic, 1, 1, PermName.PERM_WRITE | PermName.PERM_READ));
+        topicConfigTableMap.put(retryTopic, new TopicConfig(retryTopic, 1, 1, PermName.PERM_WRITE | PermName.PERM_READ));
+
+        ConsumeQueueInterface liteTopicCQ = combineConsumeQueueStore.getConsumeQueue(liteTopic, queueId);
+        ConsumeQueueInterface normalTopicCQ = combineConsumeQueueStore.getConsumeQueue(normalTopic, queueId);
+        ConsumeQueueInterface retryTopicCQ = combineConsumeQueueStore.getConsumeQueue(retryTopic, queueId);
+        assertNull(liteTopicCQ);
+        assertNull(normalTopicCQ);
+        assertNull(retryTopicCQ);
+
+        DispatchRequest request1 = new DispatchRequest(liteTopic, queueId, msgSize, msgSize, 0,
+            System.currentTimeMillis(), 0, null, null, 0, 0, null);
+        messageStore.getQueueStore().putMessagePositionInfoWrapper(request1);
+
+        DispatchRequest request2 = new DispatchRequest(normalTopic, queueId, 2 * msgSize, msgSize, 0,
+            System.currentTimeMillis(), 0, null, null, 0, 0, null);
+        messageStore.getQueueStore().putMessagePositionInfoWrapper(request2);
+
+        DispatchRequest request3 = new DispatchRequest(retryTopic, queueId, 3 * msgSize, msgSize, 0,
+            System.currentTimeMillis(), 0, null, null, 0, 0, null);
+        messageStore.getQueueStore().putMessagePositionInfoWrapper(request3);
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            ConsumeQueueInterface liteTopicFileCQ = consumeQueueStore.getConsumeQueue(liteTopic, queueId);
+            ConsumeQueueInterface liteTopicRocksdbCQ = rocksDBConsumeQueueStore.getConsumeQueue(liteTopic, queueId);
+            assertEquals(1L, liteTopicFileCQ.getMaxOffsetInQueue());
+            assertEquals(1L, liteTopicRocksdbCQ.getMaxOffsetInQueue());
+
+            ConsumeQueueInterface normalTopicFileCQ = consumeQueueStore.getConsumeQueue(normalTopic, queueId);
+            ConsumeQueueInterface normalTopicRocksdbCQ = rocksDBConsumeQueueStore.getConsumeQueue(normalTopic, queueId);
+            assertEquals(1L, normalTopicFileCQ.getMaxOffsetInQueue());
+            assertEquals(0L, normalTopicRocksdbCQ.getMaxOffsetInQueue());
+
+            ConsumeQueueInterface retryTopicFileCQ = consumeQueueStore.getConsumeQueue(retryTopic, queueId);
+            ConsumeQueueInterface retryTopicRocksdbCQ = rocksDBConsumeQueueStore.getConsumeQueue(retryTopic, queueId);
+            assertEquals(1L, retryTopicFileCQ.getMaxOffsetInQueue());
+            assertEquals(0L, retryTopicRocksdbCQ.getMaxOffsetInQueue());
+        });
+    }
+}

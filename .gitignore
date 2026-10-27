@@ -1,6 +1,18 @@
 .venv/
 __pycache__/
 *.pyc
-artifacts/
-testdata/
 .pytest_cache/
+
+# Large local artifacts; published compressed copies live in artifacts/published/
+artifacts/code.graph.json
+artifacts/evidence.scip.json
+artifacts/evidence.scip.filtered.json
+artifacts/evidence.treesitter.json
+artifacts/rocketmq.scip
+artifacts/scip-java.log
+
+# Build outputs inside the vendored test snapshot
+testdata/rocketmq/**/target/
+testdata/rocketmq/**/build/
+testdata/rocketmq/**/.gradle/
+testdata/rocketmq/.git/

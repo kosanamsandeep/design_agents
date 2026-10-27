@@ -1,0 +1,469 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.rocketmq.broker.topic;
+
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.rocketmq.broker.BrokerController;
+import org.apache.rocketmq.common.BrokerConfig;
+import org.apache.rocketmq.common.TopicAttributes;
+import org.apache.rocketmq.common.TopicConfig;
+import org.apache.rocketmq.common.attribute.Attribute;
+import org.apache.rocketmq.common.attribute.BooleanAttribute;
+import org.apache.rocketmq.common.attribute.CQType;
+import org.apache.rocketmq.common.attribute.EnumAttribute;
+import org.apache.rocketmq.common.attribute.LongRangeAttribute;
+import org.apache.rocketmq.common.constant.PermName;
+import org.apache.rocketmq.common.utils.QueueTypeUtils;
+import org.apache.rocketmq.remoting.protocol.DataVersion;
+import org.apache.rocketmq.remoting.protocol.body.TopicConfigAndMappingSerializeWrapper;
+import org.apache.rocketmq.remoting.protocol.body.TopicConfigSerializeWrapper;
+import org.apache.rocketmq.store.DefaultMessageStore;
+import org.apache.rocketmq.store.config.MessageStoreConfig;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import static com.google.common.collect.Sets.newHashSet;
+import static java.util.Arrays.asList;
+import static org.mockito.Mockito.when;
+
+@RunWith(MockitoJUnitRunner.class)
+public class TopicConfigManagerTest {
+
+    private final String basePath = Paths.get(System.getProperty("user.home"),
+            "unit-test-store", UUID.randomUUID().toString().substring(0, 16).toUpperCase()).toString();
+    private TopicConfigManager topicConfigManager;
+    @Mock
+    private BrokerController brokerController;
+
+    @Mock
+    private DefaultMessageStore defaultMessageStore;
+
+    @Before
+    public void init() {
+        BrokerConfig brokerConfig = new BrokerConfig();
+        when(brokerController.getBrokerConfig()).thenReturn(brokerConfig);
+        MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
+        messageStoreConfig.setStorePathRootDir(basePath);
+        when(brokerController.getMessageStoreConfig()).thenReturn(messageStoreConfig);
+        Mockito.lenient().when(brokerController.getMessageStore()).thenReturn(defaultMessageStore);
+        when(defaultMessageStore.getStateMachineVersion()).thenReturn(0L);
+        topicConfigManager = new TopicConfigManager(brokerController);
+    }
+
+    @Test
+    public void testAddUnsupportedKeyOnCreating() {
+        String unsupportedKey = "key4";
+
+        supportAttributes(asList(
+                new EnumAttribute("enum.key", true, newHashSet("enum-1", "enum-2", "enum-3"), "enum-1"),
+                new BooleanAttribute("bool.key", false, false),
+                new LongRangeAttribute("long.range.key", true, 10, 20, 15)
+        ));
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("+enum.key", "enum-2");
+        attributes.put("+" + unsupportedKey, "value1");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName("new-topic");
+        topicConfig.setAttributes(attributes);
+
+        RuntimeException runtimeException = Assert.assertThrows(RuntimeException.class, () -> topicConfigManager.updateTopicConfig(topicConfig));
+        Assert.assertEquals("unsupported key: " + unsupportedKey, runtimeException.getMessage());
+    }
+
+    @Test
+    public void testAddWrongFormatKeyOnCreating() {
+        supportAttributes(asList(
+                new EnumAttribute("enum.key", true, newHashSet("enum-1", "enum-2", "enum-3"), "enum-1"),
+                new BooleanAttribute("bool.key", false, false),
+                new LongRangeAttribute("long.range.key", true, 10, 20, 15)
+        ));
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("++enum.key", "value1");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName("new-topic");
+        topicConfig.setAttributes(attributes);
+
+        RuntimeException runtimeException = Assert.assertThrows(RuntimeException.class, () -> topicConfigManager.updateTopicConfig(topicConfig));
+        Assert.assertEquals("kv string format wrong.", runtimeException.getMessage());
+    }
+
+    @Test
+    public void testDeleteKeyOnCreating() {
+        String key = "enum.key";
+        supportAttributes(asList(
+                new EnumAttribute("enum.key", true, newHashSet("enum-1", "enum-2", "enum-3"), "enum-1"),
+                new BooleanAttribute("bool.key", false, false),
+                new LongRangeAttribute("long.range.key", true, 10, 20, 15)
+        ));
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("-" + key, "");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName("new-topic");
+        topicConfig.setAttributes(attributes);
+
+        RuntimeException runtimeException = Assert.assertThrows(RuntimeException.class, () -> topicConfigManager.updateTopicConfig(topicConfig));
+        Assert.assertEquals("only add attribute is supported while creating topic. key: " + key, runtimeException.getMessage());
+    }
+
+    @Test
+    public void testDeleteTopicConfigWithDeferredPersist() {
+        TopicConfigManager manager = Mockito.spy(topicConfigManager);
+        Mockito.doNothing().when(manager).persist();
+
+        TopicConfig deferredTopic = new TopicConfig();
+        deferredTopic.setTopicName("deferred-topic");
+        manager.getTopicConfigTable().put(deferredTopic.getTopicName(), deferredTopic);
+        manager.deleteTopicConfig(deferredTopic.getTopicName(), false);
+        Mockito.verify(manager, Mockito.never()).persist();
+
+        TopicConfig persistedTopic = new TopicConfig();
+        persistedTopic.setTopicName("persisted-topic");
+        manager.getTopicConfigTable().put(persistedTopic.getTopicName(), persistedTopic);
+        manager.deleteTopicConfig(persistedTopic.getTopicName(), true);
+        Mockito.verify(manager).persist();
+    }
+
+    @Test
+    public void testAddWrongValueOnCreating() {
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("+" + TopicAttributes.QUEUE_TYPE_ATTRIBUTE.getName(), "wrong-value");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName("new-topic");
+        topicConfig.setAttributes(attributes);
+
+        RuntimeException runtimeException = Assert.assertThrows(RuntimeException.class, () -> topicConfigManager.updateTopicConfig(topicConfig));
+        Assert.assertEquals("value is not in set: [SimpleCQ, BatchCQ]", runtimeException.getMessage());
+    }
+
+    @Test
+    public void testNormalAddKeyOnCreating() {
+        String topic = "new-topic";
+
+        supportAttributes(asList(
+                new EnumAttribute("enum.key", true, newHashSet("enum-1", "enum-2", "enum-3"), "enum-1"),
+                new BooleanAttribute("bool.key", false, false),
+                new LongRangeAttribute("long.range.key", true, 10, 20, 15)
+        ));
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("+enum.key", "enum-2");
+        attributes.put("+long.range.key", "16");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName(topic);
+        topicConfig.setAttributes(attributes);
+        topicConfigManager.updateTopicConfig(topicConfig);
+
+        TopicConfig existingTopicConfig = topicConfigManager.getTopicConfigTable().get(topic);
+        Assert.assertEquals("enum-2", existingTopicConfig.getAttributes().get("enum.key"));
+        Assert.assertEquals("16", existingTopicConfig.getAttributes().get("long.range.key"));
+//        assert file
+    }
+
+    @Test
+    public void testAddDuplicatedKeyOnUpdating() {
+        String duplicatedKey = "long.range.key";
+
+        supportAttributes(asList(
+                new EnumAttribute("enum.key", true, newHashSet("enum-1", "enum-2", "enum-3"), "enum-1"),
+                new BooleanAttribute("bool.key", false, false),
+                new LongRangeAttribute("long.range.key", true, 10, 20, 15)
+        ));
+
+        createTopic();
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("+" + duplicatedKey, "11");
+        attributes.put("-" + duplicatedKey, "");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName("new-topic");
+        topicConfig.setAttributes(attributes);
+
+        RuntimeException runtimeException = Assert.assertThrows(RuntimeException.class, () -> topicConfigManager.updateTopicConfig(topicConfig));
+        Assert.assertEquals("alter duplication key. key: " + duplicatedKey, runtimeException.getMessage());
+    }
+
+    private void createTopic() {
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("+enum.key", "enum-3");
+        attributes.put("+bool.key", "true");
+        attributes.put("+long.range.key", "12");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName("new-topic");
+        topicConfig.setAttributes(attributes);
+
+        topicConfigManager.updateTopicConfig(topicConfig);
+    }
+
+    @Test
+    public void testDeleteNonexistentKeyOnUpdating() {
+        String key = "nonexisting.key";
+
+        supportAttributes(asList(
+                new EnumAttribute("enum.key", true, newHashSet("enum-1", "enum-2", "enum-3"), "enum-1"),
+                new BooleanAttribute("bool.key", false, false),
+                new LongRangeAttribute("long.range.key", true, 10, 20, 15)
+        ));
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("+enum.key", "enum-2");
+        attributes.put("+bool.key", "true");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName("new-topic");
+        topicConfig.setAttributes(attributes);
+
+        topicConfigManager.updateTopicConfig(topicConfig);
+
+        attributes = new HashMap<>();
+        attributes.clear();
+        attributes.put("-" + key, "");
+        topicConfig.setAttributes(attributes);
+        RuntimeException runtimeException = Assert.assertThrows(RuntimeException.class, () -> topicConfigManager.updateTopicConfig(topicConfig));
+        Assert.assertEquals("attempt to delete a nonexistent key: " + key, runtimeException.getMessage());
+    }
+
+    @Test
+    public void testAlterTopicWithoutChangingAttributes() {
+        String topic = "new-topic";
+
+        supportAttributes(asList(
+                new EnumAttribute("enum.key", true, newHashSet("enum-1", "enum-2", "enum-3"), "enum-1"),
+                new BooleanAttribute("bool.key", false, false),
+                new LongRangeAttribute("long.range.key", true, 10, 20, 15)
+        ));
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("+enum.key", "enum-2");
+        attributes.put("+bool.key", "true");
+
+        TopicConfig topicConfigInit = new TopicConfig();
+        topicConfigInit.setTopicName(topic);
+        topicConfigInit.setAttributes(attributes);
+
+        topicConfigManager.updateTopicConfig(topicConfigInit);
+        Assert.assertEquals("enum-2", topicConfigManager.getTopicConfigTable().get(topic).getAttributes().get("enum.key"));
+        Assert.assertEquals("true", topicConfigManager.getTopicConfigTable().get(topic).getAttributes().get("bool.key"));
+
+        TopicConfig topicConfigAlter = new TopicConfig();
+        topicConfigAlter.setTopicName(topic);
+        topicConfigAlter.setReadQueueNums(10);
+        topicConfigAlter.setWriteQueueNums(10);
+        topicConfigManager.updateTopicConfig(topicConfigAlter);
+        Assert.assertEquals("enum-2", topicConfigManager.getTopicConfigTable().get(topic).getAttributes().get("enum.key"));
+        Assert.assertEquals("true", topicConfigManager.getTopicConfigTable().get(topic).getAttributes().get("bool.key"));
+    }
+
+    @Test
+    public void testNormalUpdateUnchangeableKeyOnUpdating() {
+        String topic = "exist-topic";
+
+        supportAttributes(asList(
+                new EnumAttribute("enum.key", true, newHashSet("enum-1", "enum-2", "enum-3"), "enum-1"),
+                new BooleanAttribute("bool.key", true, false),
+                new LongRangeAttribute("long.range.key", false, 10, 20, 15)
+        ));
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("+long.range.key", "14");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName(topic);
+        topicConfig.setAttributes(attributes);
+
+        topicConfigManager.updateTopicConfig(topicConfig);
+
+        attributes.put("+long.range.key", "16");
+        topicConfig.setAttributes(attributes);
+        RuntimeException runtimeException = Assert.assertThrows(RuntimeException.class, () -> topicConfigManager.updateTopicConfig(topicConfig));
+        Assert.assertEquals("attempt to update an unchangeable attribute. key: long.range.key", runtimeException.getMessage());
+    }
+
+    @Test
+    public void testNormalQueryKeyOnGetting() {
+        String topic = "exist-topic";
+        String unchangeable = "bool.key";
+
+        supportAttributes(asList(
+                new EnumAttribute("enum.key", true, newHashSet("enum-1", "enum-2", "enum-3"), "enum-1"),
+                new BooleanAttribute("bool.key", false, false),
+                new LongRangeAttribute("long.range.key", true, 10, 20, 15)
+        ));
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("+" + unchangeable, "true");
+
+        TopicConfig topicConfig = new TopicConfig();
+        topicConfig.setTopicName(topic);
+        topicConfig.setAttributes(attributes);
+
+        topicConfigManager.updateTopicConfig(topicConfig);
+
+        TopicConfig topicConfigUpdated = topicConfigManager.getTopicConfigTable().get(topic);
+        Assert.assertEquals(CQType.SimpleCQ, QueueTypeUtils.getCQType(Optional.of(topicConfigUpdated)));
+
+        Assert.assertEquals("true", topicConfigUpdated.getAttributes().get(unchangeable));
+    }
+
+    private void supportAttributes(List<Attribute> supportAttributes) {
+        Map<String, Attribute> supportedAttributes = new HashMap<>();
+
+        for (Attribute supportAttribute : supportAttributes) {
+            supportedAttributes.put(supportAttribute.getName(), supportAttribute);
+        }
+
+        TopicAttributes.ALL.putAll(supportedAttributes);
+    }
+
+    private void fillTopicConfigTable(int num) {
+        ConcurrentHashMap<String, TopicConfig> topicConfigTable = new ConcurrentHashMap<>();
+        for (int i = num - 1; i >= 0; i--) {
+            String topicName = String.format("topic%05d", i);
+            TopicConfig topicConfig = new TopicConfig(topicName, 1, 1,
+                PermName.PERM_READ | PermName.PERM_WRITE, 0);
+            topicConfigTable.put(topicName, topicConfig);
+        }
+        topicConfigManager.setTopicConfigTable(topicConfigTable);
+    }
+
+    @Test
+    public void testSubTopicConfigTable() {
+        // Empty TopicConfigTable
+        topicConfigManager.getTopicConfigTable().clear();
+        Map<String, TopicConfig> result = topicConfigManager.subTopicConfigTable(topicConfigManager.getDataVersion().toJson(), 0, 200);
+        Assert.assertTrue(result.isEmpty());
+
+        // init table, topic range [0, N)
+        final int totalTopicNum = 50000;
+        fillTopicConfigTable(totalTopicNum);
+
+        // Null DataVersion
+        int beginIndex = 0, maxNum = 200;
+        int endIndex = beginIndex + maxNum - 1;
+        result = topicConfigManager.subTopicConfigTable(null, beginIndex, maxNum);
+
+        Assert.assertEquals(maxNum, result.size());
+        Assert.assertTrue(result.containsKey(String.format("topic%05d", ThreadLocalRandom.current().nextInt(beginIndex, endIndex))));
+        Assert.assertFalse(result.containsKey(String.format("topic%05d", beginIndex - 1)));
+        Assert.assertFalse(result.containsKey(String.format("topic%05d", endIndex + 1)));
+
+        // Different DataVersion
+        DataVersion differentVersion = new DataVersion();
+        differentVersion.setCounter(new AtomicLong(1000L));  // different counter
+        differentVersion.setTimestamp(System.currentTimeMillis());
+        result = topicConfigManager.subTopicConfigTable(differentVersion.toJson(), 300, maxNum);
+
+        Assert.assertEquals(maxNum, result.size());
+        Assert.assertTrue(result.containsKey(String.format("topic%05d", ThreadLocalRandom.current().nextInt(beginIndex, endIndex))));
+        Assert.assertFalse(result.containsKey(String.format("topic%05d", beginIndex - 1)));
+        Assert.assertFalse(result.containsKey(String.format("topic%05d", endIndex + 1)));
+
+        // BeginIndexOutOfRange
+        result = topicConfigManager.subTopicConfigTable(topicConfigManager.getDataVersion().toJson(), totalTopicNum, 200);
+
+        Assert.assertTrue(result.isEmpty());
+
+        // Normal Case
+        beginIndex = 300;
+        endIndex = beginIndex + maxNum - 1;
+        result = topicConfigManager.subTopicConfigTable(topicConfigManager.getDataVersion().toJson(), beginIndex, maxNum);
+
+        Assert.assertEquals(maxNum, result.size());
+        Assert.assertTrue(result.containsKey(String.format("topic%05d", ThreadLocalRandom.current().nextInt(beginIndex, endIndex))));
+        Assert.assertFalse(result.containsKey(String.format("topic%05d", beginIndex - 1)));
+        Assert.assertFalse(result.containsKey(String.format("topic%05d", endIndex + 1)));
+
+        // NotFullTopicConfigTable
+        beginIndex = 49950;
+        endIndex = Math.min(topicConfigManager.getTopicConfigTable().size() - 1, beginIndex + maxNum - 1);
+        result = topicConfigManager.subTopicConfigTable(topicConfigManager.getDataVersion().toJson(), beginIndex, maxNum);
+
+        Assert.assertEquals(totalTopicNum - beginIndex, result.size());
+        Assert.assertTrue(result.containsKey(String.format("topic%05d", ThreadLocalRandom.current().nextInt(beginIndex, endIndex))));
+        Assert.assertFalse(result.containsKey(String.format("topic%05d", beginIndex - 1)));
+        Assert.assertFalse(result.containsKey(String.format("topic%05d", endIndex + 1)));
+    }
+
+    @Test
+    public void testSplitRegistrationBumpsVersion() {
+        brokerController.getBrokerConfig().setEnableSplitRegistration(true);
+        long counterBefore = topicConfigManager.getDataVersion().getCounter().get();
+
+        TopicConfigAndMappingSerializeWrapper wrapper =
+            topicConfigManager.buildSerializeWrapper(topicConfigManager.getTopicConfigTable());
+
+        long counterAfter = topicConfigManager.getDataVersion().getCounter().get();
+        Assert.assertEquals(counterBefore + 1, counterAfter);
+        Assert.assertEquals(counterAfter, wrapper.getDataVersion().getCounter().get());
+    }
+
+    @Test
+    public void testSerializeWrapperIsSnapshot() {
+        topicConfigManager.getTopicConfigTable().clear();
+
+        for (int i = 0; i < 10; i++) {
+            TopicConfig tc = new TopicConfig("BaseTopic-" + i, 4, 4,
+                PermName.PERM_READ | PermName.PERM_WRITE);
+            topicConfigManager.getTopicConfigTable().put(tc.getTopicName(), tc);
+        }
+
+        TopicConfigSerializeWrapper wrapper = topicConfigManager.buildTopicConfigSerializeWrapper();
+        ConcurrentMap<String, TopicConfig> wrapperTable = wrapper.getTopicConfigTable();
+        int sizeAtBuild = wrapperTable.size();
+        long versionAtBuild = wrapper.getDataVersion().getCounter().get();
+
+        // Wrapper should hold an independent snapshot, not the live reference
+        Assert.assertNotSame(topicConfigManager.getTopicConfigTable(), wrapperTable);
+
+        // Simulate a concurrent topic update after the wrapper was built
+        TopicConfig newTopic = new TopicConfig("NewTopic-AfterBuild", 8, 8,
+            PermName.PERM_READ | PermName.PERM_WRITE);
+        topicConfigManager.getTopicConfigTable().put(newTopic.getTopicName(), newTopic);
+        topicConfigManager.updateDataVersion();
+
+        // The wrapper's table should NOT see the new topic
+        Assert.assertFalse(wrapperTable.containsKey("NewTopic-AfterBuild"));
+        Assert.assertEquals(sizeAtBuild, wrapperTable.size());
+
+        // The wrapper's version should reflect a consistent point-in-time snapshot
+        Assert.assertEquals(versionAtBuild, wrapper.getDataVersion().getCounter().get());
+    }
+}
