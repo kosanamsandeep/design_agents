@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legacy Lens — Implementation Status</title>
+    <meta name="description" content="What was achieved in the RocketMQ vertical slice, the last run metrics, review findings, and what comes next.">
+    <style>
+        :root {
+            --bg: #f4efe6;
+            --paper: #fffaf2;
+            --ink: #1c1917;
+            --muted: #5f564d;
+            --line: #d9ccb8;
+            --accent: #0f766e;
+            --accent-soft: #d7f3ef;
+            --warm: #c2410c;
+            --warm-soft: #fde8db;
+            --good: #166534;
+            --good-soft: #dcfce7;
+            --bad: #991b1b;
+            --bad-soft: #fee2e2;
+            --code-bg: #1c1917;
+            --code-ink: #f5f1e8;
+            --radius: 16px;
+            --shadow: 0 18px 40px rgba(28, 25, 23, 0.08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", "SF Mono", monospace;
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.65;
+            background:
+                radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28%),
+                radial-gradient(circle at top right, rgba(194, 65, 12, 0.13), transparent 24%),
+                linear-gradient(180deg, #faf5ec 0%, #f4efe6 100%);
+        }
+
+        a { color: var(--accent); }
+        a:hover { text-decoration: underline; }
+
+        header.site {
+            padding: 16px 0 12px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 250, 242, 0.88);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .shell { width: min(1220px, calc(100% - 32px)); margin: 0 auto; }
+
+        .title-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; flex-wrap: wrap;
+        }
+
+        .brand {
+            display: inline-flex; align-items: center; gap: 12px;
+            font-weight: 700; text-decoration: none; color: var(--ink);
+        }
+
+        .brand-mark {
+            width: 42px; height: 42px; display: inline-grid; place-items: center;
+            border-radius: 12px; background: linear-gradient(135deg, var(--accent), #115e59);
+            color: #fff; font-size: 0.9rem; box-shadow: var(--shadow);
+        }
+
+        .brand small {
+            display: block; font-weight: 600; color: var(--muted);
+            font-size: 0.72rem; letter-spacing: 0.04em;
+        }
+
+        .top-links { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; align-items: center; }
+
+        .top-links a, .top-links button {
+            color: var(--accent); text-decoration: none; border: 1px solid var(--line);
+            background: var(--paper); padding: 7px 12px; border-radius: 999px;
+            cursor: pointer; font: inherit;
+        }
+
+        .top-links a:hover, .top-links button:hover { background: var(--accent-soft); text-decoration: none; }
+
+        main { padding: 28px 0 80px; }
+
+        .layout { display: grid; grid-template-columns: 270px 1fr; gap: 24px; align-items: start; }
+        .layout > div { min-width: 0; }
+
+        .toc {
+            position: sticky; top: 84px; background: var(--paper);
+            border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 16px 14px 14px; box-shadow: var(--shadow);
+            max-height: calc(100vh - 104px); overflow-y: auto;
+        }
+
+        .toc h3 {
+            margin: 0 0 8px 6px; font-size: 0.72rem; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--muted);
+        }
+
+        .toc ol { list-style: none; padding: 0; margin: 0; }
+        .toc li { margin: 1px 0; }
+
+        .toc a {
+            display: block; padding: 5px 8px; border-radius: 8px; color: var(--ink);
+            text-decoration: none; font-size: 0.85rem; border-left: 3px solid transparent;
+        }
+
+        .toc a:hover { background: var(--accent-soft); color: var(--accent); }
+        .toc a.active {
+            background: var(--accent-soft); color: var(--accent);
+            border-left-color: var(--accent); font-weight: 600;
+        }
+
+        .toc .group {
+            margin: 14px 0 3px 8px; font-size: 0.65rem; text-transform: uppercase;
+            letter-spacing: 0.12em; color: var(--warm); font-weight: 700;
+        }
+
+        .hero {
+            background: var(--paper); border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 30px 34px;
+            box-shadow: var(--shadow); margin-bottom: 22px;
+        }
+
+        .hero h1 { margin: 8px 0 12px; font-size: 2rem; line-height: 1.2; letter-spacing: -0.01em; }
+        .eyebrow {
+            text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.72rem;
+            color: var(--warm); margin: 0; font-weight: 700;
+        }
+        .hero p { margin: 8px 0; color: var(--muted); }
+        .meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+        .pill {
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px;
+            border-radius: 999px; border: 1px solid var(--line); background: #fffdf7;
+            font-size: 0.75rem; color: var(--muted);
+        }
+
+        .pill.verified { border-color: #86efac; background: var(--good-soft); color: var(--good); }
+        .pill.warn { border-color: #fdba74; background: var(--warm-soft); color: var(--warm); }
+        .pill.bad { border-color: #fca5a5; background: var(--bad-soft); color: var(--bad); }
+
+        section.card {
+            background: var(--paper); border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 26px 30px;
+            box-shadow: var(--shadow); margin-bottom: 20px; scroll-margin-top: 90px;
+        }
+
+        section.card h2 {
+            margin: 0 0 6px; font-size: 1.45rem; display: flex;
+            align-items: baseline; gap: 12px; flex-wrap: wrap;
+        }
+
+        section.card h2 .num {
+            color: var(--warm); font-variant-numeric: tabular-nums;
+            font-size: 0.95rem; font-weight: 800; letter-spacing: 0.06em;
+        }
+
+        section.card h3 { margin-top: 26px; margin-bottom: 8px; font-size: 1.08rem; scroll-margin-top: 90px; }
+        h4 { margin: 16px 0 6px; font-size: 0.98rem; }
+        p { margin: 8px 0; }
+        ul, ol { margin: 8px 0 10px 22px; padding: 0; }
+        li { margin: 5px 0; }
+
+        code {
+            font-family: var(--mono); background: #efe7d6; color: #1c1917;
+            padding: 1px 6px; border-radius: 5px; font-size: 0.88em;
+        }
+
+        pre {
+            background: var(--code-bg); color: var(--code-ink); padding: 14px 16px;
+            border-radius: 10px; overflow-x: auto; font-size: 0.82rem;
+            line-height: 1.55;
+        }
+
+        pre code { background: transparent; color: inherit; padding: 0; }
+
+        .badge {
+            display: inline-block; padding: 2px 9px; border-radius: 999px;
+            font-size: 0.66rem; font-weight: 700; background: var(--accent-soft);
+            color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .badge.warm { background: var(--warm-soft); color: var(--warm); }
+        .badge.good { background: var(--good-soft); color: var(--good); }
+        .badge.bad { background: var(--bad-soft); color: var(--bad); }
+        .badge.gray { background: #efe7d6; color: var(--muted); }
+
+        .callout {
+            border-left: 4px solid var(--accent); background: var(--accent-soft);
+            padding: 12px 15px; border-radius: 8px; margin: 14px 0;
+        }
+
+        .callout.warn { border-left-color: var(--warm); background: var(--warm-soft); }
+        .callout.danger { border-left-color: var(--bad); background: var(--bad-soft); }
+        .callout.good { border-left-color: var(--good); background: var(--good-soft); }
+        .callout strong:first-child { display: block; margin-bottom: 3px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+        .mini {
+            border: 1px solid var(--line); border-radius: 12px;
+            padding: 14px 16px; background: #fffdf7;
+        }
+
+        .mini.good { border-color: #86efac; background: var(--good-soft); }
+        .mini.bad { border-color: #fca5a5; background: var(--bad-soft); }
+        .mini.warn { border-color: #fdba74; background: var(--warm-soft); }
+        .mini h4 { margin-top: 0; }
+
+        .kpis {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px; margin: 16px 0 6px;
+        }
+
+        .kpi {
+            border: 1px solid var(--line); border-radius: 12px;
+            padding: 13px 14px; background: #fffdf7;
+        }
+
+        .kpi .v { font-size: 1.25rem; font-weight: 800; color: var(--accent); line-height: 1.2; }
+        .kpi .l { font-size: 0.76rem; color: var(--muted); margin-top: 3px; }
+        .kpi.warn .v { color: var(--warm); }
+        .kpi.bad .v { color: var(--bad); }
+
+        .table-wrap {
+            overflow-x: auto; border: 1px solid var(--line);
+            border-radius: 10px; margin: 14px 0;
+        }
+
+        table {
+            width: 100%; border-collapse: collapse; font-size: 0.86rem;
+            background: #fffdf7;
+        }
+
+        th, td {
+            border-bottom: 1px solid var(--line); padding: 9px 11px;
+            text-align: left; vertical-align: top;
+        }
+
+        th {
+            background: var(--accent-soft); color: var(--accent);
+            font-weight: 700; position: sticky; top: 0; z-index: 1;
+            white-space: nowrap;
+        }
+
+        tbody tr:nth-child(even) { background: #fdf9f0; }
+        tbody tr:hover { background: var(--accent-soft); }
+        td.num { font-variant-numeric: tabular-nums; }
+
+        .mermaid-wrap {
+            background: #fffdf7; border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 18px 16px 10px;
+            margin: 16px 0; box-shadow: 0 8px 22px rgba(28, 25, 23, 0.05);
+            overflow-x: auto;
+        }
+
+        .mermaid-wrap .caption {
+            color: var(--muted); font-size: 0.82rem; margin: 10px 4px 2px;
+            font-style: italic; text-align: center;
+        }
+
+        .diagram-svg svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+        .diagram-src { margin: 8px auto 2px; }
+
+        .diagram-src summary {
+            cursor: pointer; font-size: 0.76rem; color: var(--muted);
+            text-align: center; padding: 2px 6px;
+        }
+
+        .diagram-src summary:hover { color: var(--accent); }
+        .diagram-src pre { margin: 8px 0 2px; text-align: left; }
+
+        .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 0.9rem; margin: 10px 0; }
+        .kv dt { font-weight: 700; color: var(--muted); }
+        .kv dd { margin: 0; }
+
+        footer { text-align: center; color: var(--muted); font-size: 0.82rem; padding: 30px 0 10px; }
+
+        .to-top {
+            position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+            border-radius: 50%; border: 1px solid var(--line); background: var(--paper);
+            color: var(--accent); box-shadow: var(--shadow); font-size: 1.1rem;
+            cursor: pointer; opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease; z-index: 40;
+        }
+
+        .to-top.show { opacity: 1; pointer-events: auto; }
+
+        .skip-link {
+            position: absolute; left: -999px; top: 0; background: var(--paper);
+            padding: 10px 16px; border: 1px solid var(--line);
+            border-radius: 0 0 8px 0; z-index: 100;
+        }
+
+        .skip-link:focus { left: 0; }
+
+        @media (max-width: 960px) {
+            .layout { grid-template-columns: 1fr; }
+            .toc { position: static; max-height: none; }
+            .toc ol { columns: 2; column-gap: 18px; }
+        }
+
+        @media (max-width: 720px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .hero { padding: 22px; }
+            .hero h1 { font-size: 1.55rem; }
+            section.card { padding: 20px; }
+            .toc ol { columns: 1; }
+        }
+
+        @media print {
+            header.site, .toc, .to-top, .toolbar, .top-links, .skip-link { display: none !important; }
+            body { background: #fff; }
+            .layout { grid-template-columns: 1fr; }
+            section.card, .hero, .mermaid-wrap { box-shadow: none; break-inside: avoid; border-color: #bbb; }
+            a { color: #111; text-decoration: none; }
+            pre { white-space: pre-wrap; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .to-top { transition: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="#top">
+                <span class="brand-mark">IS</span>
+                <span>Implementation Status<small>Legacy Lens · RocketMQ vertical slice · 27 Oct 2026</small></span>
+            </a>
+            <nav class="top-links" aria-label="Page tools">
+                <a href="implementation-status.html">Status</a>
+                <a href="agent-review-outcomes.md">Reviews</a>
+                <a href="run-2026-10-27-rocketmq.md">Run record</a>
+                <a href="delivery-plan-status.html">Delivery plan</a>
+                <a href="../README.md">README</a>
+                <a href="../installations.md">Installations</a>
+                <button type="button" id="downloadBtn" title="Save a copy of this page">⬇ Download</button>
+                <button type="button" onclick="window.print()" title="Print or save as PDF">🖨 Print</button>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main">
+        <div class="shell">
+            <div class="layout">
+
+                <aside class="toc" aria-label="Table of contents">
+                    <h3>Contents</h3>
+                    <ol>
+                        <li><a href="#achieved">00 · What was achieved</a></li>
+                        <li><a href="#last-run">01 · Last run</a></li>
+                        <li><a href="#pipeline">02 · Pipeline</a></li>
+                        <li><a href="#reviews">03 · Agent reviews</a></li>
+                        <li><a href="#next">04 · What comes next</a></li>
+                        <li><a href="#limits">05 · Known limitations</a></li>
+                        <li><a href="#links">06 · Links</a></li>
+                    </ol>
+                </aside>
+
+                <div>
+                    <!-- ============ HERO ============ -->
+                    <section class="hero" id="top">
+                        <p class="eyebrow">First vertical slice · built, run, reviewed</p>
+                        <h1>What is working now — and what is next</h1>
+                        <p>SCIP + tree-sitter analytics, a validated evidence model, deterministic HLD/LLD
+                            baselines, a CLI, and two read-only synthesis roles — exercised end to end on
+                            Apache RocketMQ.</p>
+                        <div class="meta-row">
+                            <span class="pill verified">✓ Pipeline runs end to end</span>
+                            <span class="pill verified">✓ Contract tests pass</span>
+                            <span class="pill verified">✓ Merged model validates</span>
+                            <span class="pill warn">Measured score: TBD</span>
+                            <span class="pill">Diagrams embedded · works offline</span>
+                        </div>
+                        <div class="callout good" style="margin-top:18px">
+                            <strong>The one-line status</strong>
+                            The deterministic foundation works on a 1,550-file Java main-source slice. It is
+                            not a production design service yet: boundaries need maintainer sign-off, golden
+                            labels are missing, and the synthesis agents are still review-only.
+                        </div>
+                    </section>
+
+                    <!-- ============ ACHIEVED ============ -->
+                    <section class="card" id="achieved">
+                        <h2><span class="num">00</span> What was achieved</h2>
+
+                        <div class="grid-3">
+                            <div class="mini good">
+                                <h4>Evidence layer</h4>
+                                <p>SCIP and tree-sitter adapters emit the same schema; merge preserves
+                                    evidence and confidence; the semantic validator checks references,
+                                    coverage, and conflict resolution.</p>
+                            </div>
+                            <div class="mini good">
+                                <h4>Design layer</h4>
+                                <p>Deterministic HLD containers and LLD slices, with evidence pointers,
+                                    entry points, call-site evidence, surfaces, and explicit unknowns.</p>
+                            </div>
+                            <div class="mini good">
+                                <h4>Method layer</h4>
+                                <p>Portable <code>hld-synthesis</code> and <code>lld-synthesis</code>
+                                    skills, plus read-only <code>hld-architect</code> and
+                                    <code>lld-analyst</code> roles.</p>
+                            </div>
+                            <div class="mini">
+                                <h4>CLI</h4>
+                                <p><code>scip</code> · <code>treesitter</code> · <code>merge</code> ·
+                                    <code>hld</code> · <code>lld</code> · <code>validate</code> ·
+                                    <code>run</code>.</p>
+                            </div>
+                            <div class="mini">
+                                <h4>Contract</h4>
+                                <p>Schema v1 draft, 3 valid + 14 invalid fixtures, 14 canonicalization
+                                    cases; all passing.</p>
+                            </div>
+                            <div class="mini">
+                                <h4>Reproducibility</h4>
+                                <p><code>installations.md</code>, index/run scripts, pinned commit,
+                                    artifact manifest, run record, review outcomes.</p>
+                            </div>
+                        </div>
+
+                        <h3>Repository and toolchain</h3>
+                        <dl class="kv">
+                            <dt>Test repo</dt><dd><code>apache/rocketmq</code> · tag <code>rocketmq-all-5.5.1</code></dd>
+                            <dt>Commit</dt><dd><code>efa1be59d6fc747ad220f036c86030f05f0419f9</code></dd>
+                            <dt>Java files</dt><dd>2,254 checkout · 2,265 SCIP documents after build · 1,550 main-source after filters</dd>
+                            <dt>Toolchain</dt><dd>JDK 21.0.12 · Maven 3.9.16 · scip-java 0.13.2 · tree-sitter 0.25.2 · tree-sitter-java 0.23.5</dd>
+                            <dt>Pinned note</dt><dd>tree-sitter 0.26.0 segfaulted during GC; 0.25.2 is pinned and parses the full repo</dd>
+                        </dl>
+
+                        <h3>Implemented files</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Component</th><th>Path</th><th>State</th></tr></thead>
+                                <tbody>
+                                    <tr><td>SCIP Java adapter</td><td><code>legacy_lens/adapters/scip_java.py</code></td><td><span class="badge good">Working</span></td></tr>
+                                    <tr><td>tree-sitter Java adapter</td><td><code>legacy_lens/adapters/tree_sitter_java.py</code></td><td><span class="badge good">Working</span></td></tr>
+                                    <tr><td>Scope attribution</td><td><code>legacy_lens/java_scopes.py</code></td><td><span class="badge good">Working</span></td></tr>
+                                    <tr><td>Merge + conflicts</td><td><code>legacy_lens/merge.py</code></td><td><span class="badge good">Working</span></td></tr>
+                                    <tr><td>HLD/LLD baseline</td><td><code>legacy_lens/architecture.py</code></td><td><span class="badge good">Working</span></td></tr>
+                                    <tr><td>CLI</td><td><code>legacy_lens/cli.py</code></td><td><span class="badge good">Working</span></td></tr>
+                                    <tr><td>Skills / agents</td><td><code>.claude/skills/</code>, <code>.claude/agents/</code></td><td><span class="badge warm">Review-only</span></td></tr>
+                                    <tr><td>Install record</td><td><code>installations.md</code></td><td><span class="badge good">Complete</span></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- ============ LAST RUN ============ -->
+                    <section class="card" id="last-run">
+                        <h2><span class="num">01</span> Last run — metrics</h2>
+
+                        <div class="kpis">
+                            <div class="kpi"><div class="v">34,010</div><div class="l">SCIP entities · 86,517 edges</div></div>
+                            <div class="kpi"><div class="v">31,040</div><div class="l">tree-sitter entities · 33,574 edges</div></div>
+                            <div class="kpi"><div class="v">38,789</div><div class="l">merged entities · 109,647 edges</div></div>
+                            <div class="kpi"><div class="v">16 / 40</div><div class="l">HLD containers / edges</div></div>
+                            <div class="kpi"><div class="v">34 / 10</div><div class="l">namesrv LLD classes / flows</div></div>
+                            <div class="kpi warn"><div class="v">0.677</div><div class="l">entity overlap (not accuracy)</div></div>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Metric</th><th>Value</th><th>Interpretation</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Entity Jaccard</td><td class="num">0.677</td><td>Adapters agree on roughly two-thirds of entities.</td></tr>
+                                    <tr><td>Edge Jaccard</td><td class="num">0.095</td><td>Low because adapters cover different relations; not an accuracy score.</td></tr>
+                                    <tr><td>HLD witness coverage</td><td class="num">67 files / 4.3%</td><td>Capped sample per container/pair; source model has per-entity evidence.</td></tr>
+                                    <tr><td>Production entry points</td><td class="num">23</td><td>Plus 196 example/test <code>main</code> methods, tracked separately.</td></tr>
+                                    <tr><td>Analyzed files</td><td class="num">1,549 / 1,550</td><td>One skipped; generated/test sources excluded.</td></tr>
+                                    <tr><td>namesrv edges</td><td class="num">563 total / 500 serialized</td><td>Truncation is explicit in coverage.</td></tr>
+                                    <tr><td>End-to-end time</td><td class="num">~44 s</td><td>Excludes the one-time Maven/SCIP build.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3>Top HLD containers</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Container</th><th>Classes</th><th>Methods</th><th>Entry points</th></tr></thead>
+                                <tbody>
+                                    <tr><td>broker</td><td class="num">890</td><td class="num">3,240</td><td class="num">1</td></tr>
+                                    <tr><td>proxy</td><td class="num">503</td><td class="num">2,483</td><td class="num">5</td></tr>
+                                    <tr><td>remoting</td><td class="num">398</td><td class="num">3,911</td><td class="num">0</td></tr>
+                                    <tr><td>store</td><td class="num">341</td><td class="num">4,280</td><td class="num">0</td></tr>
+                                    <tr><td>client</td><td class="num">312</td><td class="num">3,313</td><td class="num">0</td></tr>
+                                    <tr><td>common</td><td class="num">285</td><td class="num">2,492</td><td class="num">2</td></tr>
+                                    <tr><td>tools</td><td class="num">242</td><td class="num">1,920</td><td class="num">10</td></tr>
+                                    <tr><td>auth</td><td class="num">220</td><td class="num">769</td><td class="num">0</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p><strong>Top edges:</strong> broker→remoting 7,840 · broker→common 6,667 ·
+                            client→remoting 5,214 · client→common 3,668 · tools→client 3,488 ·
+                            store→common 3,335.</p>
+                    </section>
+
+                    <!-- ============ PIPELINE ============ -->
+                    <section class="card" id="pipeline">
+                        <h2><span class="num">02</span> The pipeline that ran</h2>
+
+                        <div class="mermaid-wrap">
+                            <div class="diagram-svg"><svg id="is-diagram-1" xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 399.828125 610" role="img" aria-label="Every stage produced a versioned artifact. The agents consumed
+                                aggregate artifacts, not the 236 MB merged graph." style="max-width:100%;height:auto;"><style>#is-diagram-1{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;fill:#1c1917;}#is-diagram-1 .error-icon{fill:#fffaf2;}#is-diagram-1 .error-text{fill:#00050d;stroke:#00050d;}#is-diagram-1 .edge-thickness-normal{stroke-width:2px;}#is-diagram-1 .edge-thickness-thick{stroke-width:3.5px;}#is-diagram-1 .edge-pattern-solid{stroke-dasharray:0;}#is-diagram-1 .edge-pattern-dashed{stroke-dasharray:3;}#is-diagram-1 .edge-pattern-dotted{stroke-dasharray:2;}#is-diagram-1 .marker{fill:#5f564d;stroke:#5f564d;}#is-diagram-1 .marker.cross{stroke:#5f564d;}#is-diagram-1 svg{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;}#is-diagram-1 .label{font-family:Segoe UI,Aptos,system-ui,sans-serif;color:#1c1917;}#is-diagram-1 .cluster-label text{fill:#00050d;}#is-diagram-1 .cluster-label span,#is-diagram-1 p{color:#00050d;}#is-diagram-1 .label text,#is-diagram-1 span,#is-diagram-1 p{fill:#1c1917;color:#1c1917;}#is-diagram-1 .node rect,#is-diagram-1 .node circle,#is-diagram-1 .node ellipse,#is-diagram-1 .node polygon,#is-diagram-1 .node path{fill:#d7f3ef;stroke:#0f766e;stroke-width:1px;}#is-diagram-1 .flowchart-label text{text-anchor:middle;}#is-diagram-1 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#is-diagram-1 .node .label{text-align:center;}#is-diagram-1 .node.clickable{cursor:pointer;}#is-diagram-1 .arrowheadPath{fill:#0b0b0b;}#is-diagram-1 .edgePath .path{stroke:#5f564d;stroke-width:2.0px;}#is-diagram-1 .flowchart-link{stroke:#5f564d;fill:none;}#is-diagram-1 .edgeLabel{background-color:#fde8db;text-align:center;}#is-diagram-1 .edgeLabel rect{opacity:0.5;background-color:#fde8db;fill:#fde8db;}#is-diagram-1 .labelBkg{background-color:rgba(253, 232, 219, 0.5);}#is-diagram-1 .cluster rect{fill:#fffdf7;stroke:#d9ccb8;stroke-width:1px;}#is-diagram-1 .cluster text{fill:#00050d;}#is-diagram-1 .cluster span,#is-diagram-1 p{color:#00050d;}#is-diagram-1 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:12px;background:#fffaf2;border:1px solid #d9ccb8;border-radius:2px;pointer-events:none;z-index:100;}#is-diagram-1 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c1917;}#is-diagram-1 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="is1-is-diagram-1_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="is1-is-diagram-1_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="is1-is-diagram-1_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="is1-is-diagram-1_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="is1-is-diagram-1_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="is1-is-diagram-1_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M297.484,42L297.484,46.167C297.484,50.333,297.484,58.667,297.484,66.117C297.484,73.567,297.484,80.133,297.484,83.417L297.484,86.7" id="is1-L-IDX-SCIP-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-IDX LE-SCIP" style="fill:none;" marker-end="url(#is1-is-diagram-1_flowchart-pointEnd)"></path><path d="M80.57,134L80.57,138.167C80.57,142.333,80.57,150.667,89.581,158.655C98.592,166.644,116.613,174.287,125.624,178.109L134.635,181.931" id="is1-L-TS-MERGE-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-TS LE-MERGE" style="fill:none;" marker-end="url(#is1-is-diagram-1_flowchart-pointEnd)"></path><path d="M297.484,134L297.484,138.167C297.484,142.333,297.484,150.667,288.474,158.655C279.463,166.644,261.441,174.287,252.43,178.109L243.42,181.931" id="is1-L-SCIP-MERGE-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-SCIP LE-MERGE" style="fill:none;" marker-end="url(#is1-is-diagram-1_flowchart-pointEnd)"></path><path d="M189.027,226L189.027,230.167C189.027,234.333,189.027,242.667,189.027,250.117C189.027,257.567,189.027,264.133,189.027,267.417L189.027,270.7" id="is1-L-MERGE-HLD-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-MERGE LE-HLD" style="fill:none;" marker-end="url(#is1-is-diagram-1_flowchart-pointEnd)"></path><path d="M189.027,318L189.027,322.167C189.027,326.333,189.027,334.667,189.027,342.117C189.027,349.567,189.027,356.133,189.027,359.417L189.027,362.7" id="is1-L-HLD-LLD-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-HLD LE-LLD" style="fill:none;" marker-end="url(#is1-is-diagram-1_flowchart-pointEnd)"></path><path d="M189.027,410L189.027,414.167C189.027,418.333,189.027,426.667,189.027,434.117C189.027,441.567,189.027,448.133,189.027,451.417L189.027,454.7" id="is1-L-LLD-REVIEW-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-LLD LE-REVIEW" style="fill:none;" marker-end="url(#is1-is-diagram-1_flowchart-pointEnd)"></path><path d="M189.027,502L189.027,506.167C189.027,510.333,189.027,518.667,189.027,526.117C189.027,533.567,189.027,540.133,189.027,543.417L189.027,546.7" id="is1-L-REVIEW-REFINE-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-REVIEW LE-REFINE" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#is1-is-diagram-1_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="is1-flowchart-IDX-0" data-node="true" data-id="is1-IDX" transform="translate(297.484375, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-61.5703125" y="-21" width="123.140625" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">SCIP index</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">scip-java 0.13.2</tspan></text></g></g><g class="node default default flowchart-label" id="is1-flowchart-SCIP-1" data-node="true" data-id="is1-SCIP" transform="translate(297.484375, 113)"><rect class="basic label-container" style="" rx="0" ry="0" x="-86.34375" y="-21" width="172.6875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">SCIP adapter</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">definitions · references</tspan></text></g></g><g class="node default default flowchart-label" id="is1-flowchart-TS-2" data-node="true" data-id="is1-TS" transform="translate(80.5703125, 113)"><rect class="basic label-container" style="" rx="0" ry="0" x="-80.5703125" y="-21" width="161.140625" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">tree-sitter adapter</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">syntax · calls · routes</tspan></text></g></g><g class="node default default flowchart-label" id="is1-flowchart-MERGE-3" data-node="true" data-id="is1-MERGE" transform="translate(189.02734375, 205)"><rect class="basic label-container" style="" rx="0" ry="0" x="-78.1328125" y="-21" width="156.265625" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Merge + validate</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">evidence schema v1</tspan></text></g></g><g class="node default default flowchart-label" id="is1-flowchart-HLD-7" data-node="true" data-id="is1-HLD" transform="translate(189.02734375, 297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-92.90625" y="-21" width="185.8125" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">HLD baseline</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">16 containers · 40 edges</tspan></text></g></g><g class="node default default flowchart-label" id="is1-flowchart-LLD-9" data-node="true" data-id="is1-LLD" transform="translate(189.02734375, 389)"><rect class="basic label-container" style="" rx="0" ry="0" x="-104.015625" y="-21" width="208.03125" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">LLD slices</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">namesrv · broker · remoting</tspan></text></g></g><g class="node default default flowchart-label" id="is1-flowchart-REVIEW-11" data-node="true" data-id="is1-REVIEW" transform="translate(189.02734375, 481)"><rect class="basic label-container" style="" rx="0" ry="0" x="-93.52294921875" y="-21" width="187.0458984375" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Agent review</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">hld-architect · lld-analyst</tspan></text></g></g><g class="node default default flowchart-label" id="is1-flowchart-REFINE-13" data-node="true" data-id="is1-REFINE" transform="translate(189.02734375, 573)"><rect class="basic label-container" style="" rx="0" ry="0" x="-63.53125" y="-21" width="127.0625" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Refined artifacts</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">next step</tspan></text></g></g></g></g></g></svg></div>
+                            <p class="caption">Every stage produced a versioned artifact. The agents consumed
+                                aggregate artifacts, not the 236 MB merged graph.</p>
+                            <details class="diagram-src">
+                                <summary>Diagram source (Mermaid)</summary>
+                                <pre><code>flowchart TD
+    IDX[&quot;SCIP index&lt;br/&gt;scip-java 0.13.2&quot;] --&gt; SCIP[&quot;SCIP adapter&lt;br/&gt;definitions · references&quot;]
+    TS[&quot;tree-sitter adapter&lt;br/&gt;syntax · calls · routes&quot;] --&gt; MERGE[&quot;Merge + validate&lt;br/&gt;evidence schema v1&quot;]
+    SCIP --&gt; MERGE
+    MERGE --&gt; HLD[&quot;HLD baseline&lt;br/&gt;16 containers · 40 edges&quot;]
+    HLD --&gt; LLD[&quot;LLD slices&lt;br/&gt;namesrv · broker · remoting&quot;]
+    LLD --&gt; REVIEW[&quot;Agent review&lt;br/&gt;hld-architect · lld-analyst&quot;]
+    REVIEW -.-&gt; REFINE[&quot;Refined artifacts&lt;br/&gt;next step&quot;]</code></pre>
+                            </details>
+                        </div>
+
+                        <div class="mermaid-wrap">
+                            <div class="diagram-svg"><svg id="is-diagram-2" xmlns="http://www.w3.org/2000/svg" viewBox="-8 -15 1050.734375 93" role="img" aria-label="The agent layer is currently review-only. The next step is a
+                                controlled write loop with schema validation and human sign-off." style="max-width:100%;height:auto;"><style>#is-diagram-2{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;fill:#1c1917;}#is-diagram-2 .error-icon{fill:#fffaf2;}#is-diagram-2 .error-text{fill:#00050d;stroke:#00050d;}#is-diagram-2 .edge-thickness-normal{stroke-width:2px;}#is-diagram-2 .edge-thickness-thick{stroke-width:3.5px;}#is-diagram-2 .edge-pattern-solid{stroke-dasharray:0;}#is-diagram-2 .edge-pattern-dashed{stroke-dasharray:3;}#is-diagram-2 .edge-pattern-dotted{stroke-dasharray:2;}#is-diagram-2 .marker{fill:#5f564d;stroke:#5f564d;}#is-diagram-2 .marker.cross{stroke:#5f564d;}#is-diagram-2 svg{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;}#is-diagram-2 .label{font-family:Segoe UI,Aptos,system-ui,sans-serif;color:#1c1917;}#is-diagram-2 .cluster-label text{fill:#00050d;}#is-diagram-2 .cluster-label span,#is-diagram-2 p{color:#00050d;}#is-diagram-2 .label text,#is-diagram-2 span,#is-diagram-2 p{fill:#1c1917;color:#1c1917;}#is-diagram-2 .node rect,#is-diagram-2 .node circle,#is-diagram-2 .node ellipse,#is-diagram-2 .node polygon,#is-diagram-2 .node path{fill:#d7f3ef;stroke:#0f766e;stroke-width:1px;}#is-diagram-2 .flowchart-label text{text-anchor:middle;}#is-diagram-2 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#is-diagram-2 .node .label{text-align:center;}#is-diagram-2 .node.clickable{cursor:pointer;}#is-diagram-2 .arrowheadPath{fill:#0b0b0b;}#is-diagram-2 .edgePath .path{stroke:#5f564d;stroke-width:2.0px;}#is-diagram-2 .flowchart-link{stroke:#5f564d;fill:none;}#is-diagram-2 .edgeLabel{background-color:#fde8db;text-align:center;}#is-diagram-2 .edgeLabel rect{opacity:0.5;background-color:#fde8db;fill:#fde8db;}#is-diagram-2 .labelBkg{background-color:rgba(253, 232, 219, 0.5);}#is-diagram-2 .cluster rect{fill:#fffdf7;stroke:#d9ccb8;stroke-width:1px;}#is-diagram-2 .cluster text{fill:#00050d;}#is-diagram-2 .cluster span,#is-diagram-2 p{color:#00050d;}#is-diagram-2 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:12px;background:#fffaf2;border:1px solid #d9ccb8;border-radius:2px;pointer-events:none;z-index:100;}#is-diagram-2 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c1917;}#is-diagram-2 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="is2-is-diagram-2_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="is2-is-diagram-2_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="is2-is-diagram-2_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="is2-is-diagram-2_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="is2-is-diagram-2_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="is2-is-diagram-2_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M124.281,21L128.448,21C132.615,21,140.948,21,148.398,21C155.848,21,162.415,21,165.698,21L168.981,21" id="is2-L-M-H-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-M LE-H" style="fill:none;" marker-end="url(#is2-is-diagram-2_flowchart-pointEnd)"></path><path d="M284.016,40.235L288.182,41.696C292.349,43.157,300.682,46.078,308.132,47.539C315.582,49,322.149,49,325.432,49L328.716,49" id="is2-L-H-L-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-H LE-L" style="fill:none;" marker-end="url(#is2-is-diagram-2_flowchart-pointEnd)"></path><path d="M284.016,1.765L288.182,0.304C292.349,-1.157,300.682,-4.078,322.072,-5.539C343.461,-7,377.906,-7,412.352,-7C446.797,-7,481.242,-7,501.789,-5.957C522.335,-4.915,528.983,-2.829,532.307,-1.787L535.63,-0.744" id="is2-L-H-R-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-H LE-R" style="fill:none;" marker-end="url(#is2-is-diagram-2_flowchart-pointEnd)"></path><path d="M490.688,49L494.854,49C499.021,49,507.354,49,514.845,47.957C522.335,46.915,528.983,44.829,532.307,43.787L535.63,42.744" id="is2-L-L-R-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-L LE-R" style="fill:none;" marker-end="url(#is2-is-diagram-2_flowchart-pointEnd)"></path><path d="M669.203,21L673.37,21C677.536,21,685.87,21,693.32,21C700.77,21,707.336,21,710.62,21L713.903,21" id="is2-L-R-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-R LE-F" style="fill:none;" marker-end="url(#is2-is-diagram-2_flowchart-pointEnd)"></path><path d="M842.047,21L846.214,21C850.38,21,858.714,21,866.164,21C873.614,21,880.18,21,883.464,21L886.747,21" id="is2-L-F-N-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-F LE-N" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#is2-is-diagram-2_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="is2-flowchart-M-14" data-node="true" data-id="is2-M" transform="translate(62.140625, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-62.140625" y="-21" width="124.28125" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">code.graph.json</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">38,789 entities</tspan></text></g></g><g class="node default default flowchart-label" id="is2-flowchart-H-15" data-node="true" data-id="is2-H" transform="translate(229.1484375, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-54.8671875" y="-21" width="109.734375" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">c4.model.json</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">outline.json</tspan></text></g></g><g class="node default default flowchart-label" id="is2-flowchart-L-17" data-node="true" data-id="is2-L" transform="translate(412.3515625, 49)"><rect class="basic label-container" style="" rx="0" ry="0" x="-78.3359375" y="-21" width="156.671875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">namesrv.lld.json</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">34 classes · 10 flows</tspan></text></g></g><g class="node default default flowchart-label" id="is2-flowchart-R-19" data-node="true" data-id="is2-R" transform="translate(604.9453125, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-64.2578125" y="-21" width="128.515625" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Reviewer agents</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">read-only</tspan></text></g></g><g class="node default default flowchart-label" id="is2-flowchart-F-23" data-node="true" data-id="is2-F" transform="translate(780.625, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-61.421875" y="-21" width="122.84375" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Findings + fixes</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">documented</tspan></text></g></g><g class="node default default flowchart-label" id="is2-flowchart-N-25" data-node="true" data-id="is2-N" transform="translate(963.390625, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-71.34375" y="-21" width="142.6875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Next: write refined</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">artifacts</tspan></text></g></g></g></g></g></svg></div>
+                            <p class="caption">The agent layer is currently review-only. The next step is a
+                                controlled write loop with schema validation and human sign-off.</p>
+                            <details class="diagram-src">
+                                <summary>Diagram source (Mermaid)</summary>
+                                <pre><code>flowchart LR
+    M[&quot;code.graph.json&lt;br/&gt;38,789 entities&quot;] --&gt; H[&quot;c4.model.json&lt;br/&gt;outline.json&quot;]
+    H --&gt; L[&quot;namesrv.lld.json&lt;br/&gt;34 classes · 10 flows&quot;]
+    H --&gt; R[&quot;Reviewer agents&lt;br/&gt;read-only&quot;]
+    L --&gt; R
+    R --&gt; F[&quot;Findings + fixes&lt;br/&gt;documented&quot;]
+    F -.-&gt; N[&quot;Next: write refined&lt;br/&gt;artifacts&quot;]</code></pre>
+                            </details>
+                        </div>
+
+                        <h3>Commands</h3>
+<pre><code>./scripts/index_rocketmq.sh   # Maven build + SCIP index
+./scripts/run_rocketmq.sh     # SCIP + tree-sitter -> merge -> HLD -> LLD
+
+# or step by step
+python -m legacy_lens.cli scip --repo testdata/rocketmq \
+  --index artifacts/rocketmq.scip --out artifacts/evidence.scip.json
+python -m legacy_lens.cli treesitter --repo testdata/rocketmq \
+  --out artifacts/evidence.treesitter.json
+python -m legacy_lens.cli merge \
+  --inputs artifacts/evidence.scip.json artifacts/evidence.treesitter.json \
+  --out artifacts/code.graph.json
+python -m legacy_lens.cli hld --model artifacts/code.graph.json --out-dir artifacts/hld
+python -m legacy_lens.cli lld --model artifacts/code.graph.json \
+  --module namesrv --out-dir artifacts/lld</code></pre>
+                    </section>
+
+                    <!-- ============ REVIEWS ============ -->
+                    <section class="card" id="reviews">
+                        <h2><span class="num">03</span> What the agent reviews found</h2>
+                        <p>Two read-only role reviews were run over the generated artifacts. They found real
+                            defects, not just style issues. The fixes are in the pipeline, not only in prose.</p>
+
+                        <div class="grid-2">
+                            <div class="mini warn">
+                                <h4>HLD review</h4>
+                                <ul>
+                                    <li>Generated/test sources leaked into tree-sitter; <code>namesrv</code>’s witness was a JMH class.</li>
+                                    <li>Entry points were truncated and dominated by <code>example</code>.</li>
+                                    <li><code>unknowns_count</code> did not match the unknowns list.</li>
+                                    <li>Edge aggregation and witness sampling were undocumented.</li>
+                                    <li><code>outline.json</code>, <code>unknowns.json</code>, and <code>hld.md</code> were missing.</li>
+                                </ul>
+                            </div>
+                            <div class="mini good">
+                                <h4>What changed</h4>
+                                <ul>
+                                    <li>Generated/test/build paths excluded; namesrv witness is now main-source.</li>
+                                    <li>23 production + 196 example entry points, both reported.</li>
+                                    <li>Unknowns counts match; all three HLD artifacts are emitted.</li>
+                                    <li><code>edge_rule</code>, <code>witness_count</code>, and witness-quality flags added.</li>
+                                    <li>Module vs container status is explicit: <code>deployable</code>, <code>production</code>.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="mini warn">
+                                <h4>LLD review</h4>
+                                <ul>
+                                    <li>23 of 40 classes came from generated test sources.</li>
+                                    <li>45 phantom methods named <code>call</code>.</li>
+                                    <li><code>NamesrvStartup</code> was absent; flows cited callee declarations, not call sites.</li>
+                                    <li>Registration, heartbeat, and route lookup were untraced.</li>
+                                    <li>Coverage claimed 598 edges while serializing 500.</li>
+                                </ul>
+                            </div>
+                            <div class="mini good">
+                                <h4>What changed</h4>
+                                <ul>
+                                    <li>34 main-source classes; zero phantom <code>call</code> names.</li>
+                                    <li>Startup present; every step beyond depth 0 carries <code>call_site</code> evidence.</li>
+                                    <li>Flows now seed <code>registerBroker</code>, <code>brokerHeartbeat</code>, and <code>getRouteInfoByTopic</code>.</li>
+                                    <li>Coverage reports <code>edges_total=563</code> and <code>edges_serialized=500</code>.</li>
+                                    <li>States, seams, and invariants are explicit; missing ones are unknowns.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="callout warn">
+                            <strong>Not safe to freeze yet</strong>
+                            Boundaries, data topology, and runtime flows still need maintainer confirmation and
+                            golden-repo measurement. The full dispositions are in
+                            <a href="agent-review-outcomes.md"><code>agent-review-outcomes.md</code></a>.
+                        </div>
+                    </section>
+
+                    <!-- ============ NEXT ============ -->
+                    <section class="card" id="next">
+                        <h2><span class="num">04</span> What comes next</h2>
+
+                        <div class="mermaid-wrap">
+                            <div class="diagram-svg"><svg id="is-diagram-3" xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 240.015625 482" role="img" aria-label="The deterministic foundation is done enough to label and measure.
+                                The next slice is evaluation, not more adapters." style="max-width:100%;height:auto;"><style>#is-diagram-3{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;fill:#1c1917;}#is-diagram-3 .error-icon{fill:#fffaf2;}#is-diagram-3 .error-text{fill:#00050d;stroke:#00050d;}#is-diagram-3 .edge-thickness-normal{stroke-width:2px;}#is-diagram-3 .edge-thickness-thick{stroke-width:3.5px;}#is-diagram-3 .edge-pattern-solid{stroke-dasharray:0;}#is-diagram-3 .edge-pattern-dashed{stroke-dasharray:3;}#is-diagram-3 .edge-pattern-dotted{stroke-dasharray:2;}#is-diagram-3 .marker{fill:#5f564d;stroke:#5f564d;}#is-diagram-3 .marker.cross{stroke:#5f564d;}#is-diagram-3 svg{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;}#is-diagram-3 .label{font-family:Segoe UI,Aptos,system-ui,sans-serif;color:#1c1917;}#is-diagram-3 .cluster-label text{fill:#00050d;}#is-diagram-3 .cluster-label span,#is-diagram-3 p{color:#00050d;}#is-diagram-3 .label text,#is-diagram-3 span,#is-diagram-3 p{fill:#1c1917;color:#1c1917;}#is-diagram-3 .node rect,#is-diagram-3 .node circle,#is-diagram-3 .node ellipse,#is-diagram-3 .node polygon,#is-diagram-3 .node path{fill:#d7f3ef;stroke:#0f766e;stroke-width:1px;}#is-diagram-3 .flowchart-label text{text-anchor:middle;}#is-diagram-3 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#is-diagram-3 .node .label{text-align:center;}#is-diagram-3 .node.clickable{cursor:pointer;}#is-diagram-3 .arrowheadPath{fill:#0b0b0b;}#is-diagram-3 .edgePath .path{stroke:#5f564d;stroke-width:2.0px;}#is-diagram-3 .flowchart-link{stroke:#5f564d;fill:none;}#is-diagram-3 .edgeLabel{background-color:#fde8db;text-align:center;}#is-diagram-3 .edgeLabel rect{opacity:0.5;background-color:#fde8db;fill:#fde8db;}#is-diagram-3 .labelBkg{background-color:rgba(253, 232, 219, 0.5);}#is-diagram-3 .cluster rect{fill:#fffdf7;stroke:#d9ccb8;stroke-width:1px;}#is-diagram-3 .cluster text{fill:#00050d;}#is-diagram-3 .cluster span,#is-diagram-3 p{color:#00050d;}#is-diagram-3 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:12px;background:#fffaf2;border:1px solid #d9ccb8;border-radius:2px;pointer-events:none;z-index:100;}#is-diagram-3 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c1917;}#is-diagram-3 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="is3-is-diagram-3_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="is3-is-diagram-3_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="is3-is-diagram-3_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="is3-is-diagram-3_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="is3-is-diagram-3_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="is3-is-diagram-3_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M112.008,56L112.008,60.167C112.008,64.333,112.008,72.667,112.008,80.117C112.008,87.567,112.008,94.133,112.008,97.417L112.008,100.7" id="is3-L-A-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#is3-is-diagram-3_flowchart-pointEnd)"></path><path d="M112.008,162L112.008,166.167C112.008,170.333,112.008,178.667,112.008,186.117C112.008,193.567,112.008,200.133,112.008,203.417L112.008,206.7" id="is3-L-B-C-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-C" style="fill:none;" marker-end="url(#is3-is-diagram-3_flowchart-pointEnd)"></path><path d="M112.008,268L112.008,272.167C112.008,276.333,112.008,284.667,112.008,292.117C112.008,299.567,112.008,306.133,112.008,309.417L112.008,312.7" id="is3-L-C-D-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-D" style="fill:none;" marker-end="url(#is3-is-diagram-3_flowchart-pointEnd)"></path><path d="M112.008,374L112.008,378.167C112.008,382.333,112.008,390.667,112.008,398.117C112.008,405.567,112.008,412.133,112.008,415.417L112.008,418.7" id="is3-L-D-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-E" style="fill:none;" marker-end="url(#is3-is-diagram-3_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="is3-flowchart-A-26" data-node="true" data-id="is3-A" transform="translate(112.0078125, 28)"><rect class="basic label-container" style="" rx="0" ry="0" x="-101.125" y="-28" width="202.25" height="56"></rect><g class="label" style="" transform="translate(0, -22)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">ACHIEVED</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">schema · adapters · merge</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">HLD/LLD baseline · reviews</tspan></text></g></g><g class="node default default flowchart-label" id="is3-flowchart-B-27" data-node="true" data-id="is3-B" transform="translate(112.0078125, 134)"><rect class="basic label-container" style="" rx="0" ry="0" x="-84.76318359375" y="-28" width="169.5263671875" height="56"></rect><g class="label" style="" transform="translate(0, -22)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">NEXT</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">golden labels</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">measured F1 · sign-off</tspan></text></g></g><g class="node default default flowchart-label" id="is3-flowchart-C-29" data-node="true" data-id="is3-C" transform="translate(112.0078125, 240)"><rect class="basic label-container" style="" rx="0" ry="0" x="-112.0078125" y="-28" width="224.015625" height="56"></rect><g class="label" style="" transform="translate(0, -22)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">THEN</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">data stores · external systems</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">states · invariants · seams</tspan></text></g></g><g class="node default default flowchart-label" id="is3-flowchart-D-31" data-node="true" data-id="is3-D" transform="translate(112.0078125, 346)"><rect class="basic label-container" style="" rx="0" ry="0" x="-94.859375" y="-28" width="189.71875" height="56"></rect><g class="label" style="" transform="translate(0, -22)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">LATER</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">agent write loop</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">COBOL · SQL · React · C#</tspan></text></g></g><g class="node default default flowchart-label" id="is3-flowchart-E-33" data-node="true" data-id="is3-E" transform="translate(112.0078125, 445)"><rect class="basic label-container" style="" rx="0" ry="0" x="-106.18603515625" y="-21" width="212.3720703125" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">PRODUCTION</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">measured · canary · rollback</tspan></text></g></g></g></g></g></svg></div>
+                            <p class="caption">The deterministic foundation is done enough to label and measure.
+                                The next slice is evaluation, not more adapters.</p>
+                            <details class="diagram-src">
+                                <summary>Diagram source (Mermaid)</summary>
+                                <pre><code>flowchart TD
+    A[&quot;ACHIEVED&lt;br/&gt;schema · adapters · merge&lt;br/&gt;HLD/LLD baseline · reviews&quot;] --&gt; B[&quot;NEXT&lt;br/&gt;golden labels&lt;br/&gt;measured F1 · sign-off&quot;]
+    B --&gt; C[&quot;THEN&lt;br/&gt;data stores · external systems&lt;br/&gt;states · invariants · seams&quot;]
+    C --&gt; D[&quot;LATER&lt;br/&gt;agent write loop&lt;br/&gt;COBOL · SQL · React · C#&quot;]
+    D --&gt; E[&quot;PRODUCTION&lt;br/&gt;measured · canary · rollback&quot;]</code></pre>
+                            </details>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Priority</th><th>Next step</th><th>Why it matters</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>P0</strong></td><td>Label one golden repo: boundaries, top flows, state transitions.</td><td>Turn adapter overlap into measured accuracy; the current 0.677/0.095 are not quality scores.</td></tr>
+                                    <tr><td><strong>P0</strong></td><td>Run the HLD/LLD roles with write access to a review branch.</td><td>The skills exist; the refinement loop is still manual.</td></tr>
+                                    <tr><td><strong>P1</strong></td><td>Add data-store and deployment/config extraction (POM, Docker, K8s, SQL).</td><td>HLD currently has zero data stores and one external-systems unknown.</td></tr>
+                                    <tr><td><strong>P1</strong></td><td>Extract states, invariants, and seams for one context.</td><td>LLD currently lists enums/interfaces but no transition table or invariant model.</td></tr>
+                                    <tr><td><strong>P2</strong></td><td>Add runtime traces for critical flows.</td><td>Static analysis cannot prove dynamic dispatch or DI paths.</td></tr>
+                                    <tr><td><strong>P2</strong></td><td>Add COBOL, SQL/PL-SQL, React/TypeScript, and C# profiles.</td><td>The Lloyds estate is not Java-only; COBOL is the biggest gap.</td></tr>
+                                    <tr><td><strong>P3</strong></td><td>Measure the bake-off: Graphify, CodeGraph, CodeBoarding vs baseline.</td><td>Only measured wins should add complexity.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- ============ LIMITS ============ -->
+                    <section class="card" id="limits">
+                        <h2><span class="num">05</span> Known limitations</h2>
+                        <ul>
+                            <li><strong>No golden labels.</strong> Overlap is not accuracy; measured F1, boundary F1, and flow recall are still TBD.</li>
+                            <li><strong>Java only.</strong> COBOL, SQL/PL-SQL, React/TypeScript, and C# are not implemented in this slice.</li>
+                            <li><strong>No runtime traces.</strong> Dynamic dispatch, DI, and reflection can make static flows incomplete.</li>
+                            <li><strong>No data-store/external-system extraction.</strong> HLD records this as an unknown.</li>
+                            <li><strong>HLD witnesses are samples.</strong> 67 files (4.3%) carry container/module-pair evidence; the source model has per-entity evidence.</li>
+                            <li><strong>Edge Jaccard is low (0.095).</strong> The adapters cover different relations; the union is intentional, but it is not a quality metric.</li>
+                            <li><strong>Agents are review-only.</strong> The write/refine loop needs a controlled branch, schema validation, and sign-off.</li>
+                            <li><strong>Artifacts are not committed.</strong> The 236 MB merged graph and 86 MB SCIP index are reproducible from the frozen commit and scripts.</li>
+                        </ul>
+                    </section>
+
+                    <!-- ============ LINKS ============ -->
+                    <section class="card" id="links">
+                        <h2><span class="num">06</span> Links</h2>
+                        <ul>
+                            <li><a href="../README.md">README</a> — overview, commands, first-slice results.</li>
+                            <li><a href="../installations.md">installations.md</a> — exact versions, paths, and setup commands.</li>
+                            <li><a href="run-2026-10-27-rocketmq.md">Run record</a> — full counts and caveats.</li>
+                            <li><a href="agent-review-outcomes.md">Agent review outcomes</a> — findings and dispositions.</li>
+                            <li><a href="evidence-schema.md">Evidence schema contract</a> · <a href="evidence-schema.v1.json">JSON Schema</a></li>
+                            <li><a href="delivery-plan-status.html">Delivery plan &amp; status</a> — internal-only premise, 10-week plan.</li>
+                            <li><a href="stack-decision-record.html">Stack decision record</a> — historical ADR.</li>
+                            <li><a href="hld-lld-recovery-blueprint.html">Research blueprint</a> — tool landscape and techniques.</li>
+                        </ul>
+                    </section>
+
+                    <footer>
+                        Legacy Lens · implementation status · 27 Oct 2026.<br>
+                        All diagrams are embedded as SVG and render offline; Mermaid source is in each collapsible block.
+                    </footer>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <button class="to-top" id="toTop" type="button" aria-label="Back to top" title="Back to top">↑</button>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.addEventListener('click', function () {
+                var clone = document.documentElement.cloneNode(true);
+                clone.querySelectorAll('tr[hidden]').forEach(function (tr) { tr.removeAttribute('hidden'); });
+                var html = '<!DOCTYPE html>\n' + clone.outerHTML;
+                var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'implementation-status.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+            });
+
+            var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a[href^="#"]'));
+            var byId = {};
+            tocLinks.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+
+            var sections = Array.prototype.slice.call(document.querySelectorAll('section[id], h3[id]'));
+            var visible = new Map();
+
+            if ('IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) { visible.set(entry.target.id, entry.isIntersecting); });
+                    var active = null;
+                    sections.forEach(function (s) { if (!active && visible.get(s.id)) active = s.id; });
+                    tocLinks.forEach(function (a) { a.classList.remove('active'); });
+                    if (active && byId[active]) byId[active].classList.add('active');
+                }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+                sections.forEach(function (s) { observer.observe(s); });
+            }
+
+            var toTop = document.getElementById('toTop');
+            window.addEventListener('scroll', function () {
+                toTop.classList.toggle('show', window.scrollY > 700);
+            }, { passive: true });
+            toTop.addEventListener('click', function () {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        })();
+    </script>
+</body>
+
+</html>

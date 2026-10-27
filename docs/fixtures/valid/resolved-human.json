@@ -1,0 +1,176 @@
+{
+  "schema_version": "1.0.0",
+  "repository": {
+    "commit": "9f3c2a1",
+    "root": ".",
+    "vcs": "git",
+    "languages": [
+      "python"
+    ],
+    "tool_versions": {
+      "scip-python": "0.4.0",
+      "tree-sitter": "0.25.0",
+      "k8s-parser": "1.2.0"
+    }
+  },
+  "entities": [
+    {
+      "id": "container:billing",
+      "kind": "container",
+      "name": "billing",
+      "confidence": "extracted",
+      "evidence": [
+        {
+          "tool": "k8s-parser",
+          "tool_version": "1.2.0",
+          "type": "config",
+          "path": "deploy/k8s/billing.yaml",
+          "commit": "9f3c2a1",
+          "span": {
+            "start_line": 12,
+            "end_line": 40
+          }
+        }
+      ]
+    },
+    {
+      "id": "class:python:services/billing/model.py#Invoice",
+      "kind": "class",
+      "name": "Invoice",
+      "qualified_name": "services.billing.model.Invoice",
+      "language": "python",
+      "path": "services/billing/model.py",
+      "span": {
+        "start_line": 20,
+        "end_line": 64
+      },
+      "confidence": "extracted",
+      "evidence": [
+        {
+          "tool": "scip-python",
+          "tool_version": "0.4.0",
+          "type": "source_span",
+          "path": "services/billing/model.py",
+          "commit": "9f3c2a1",
+          "span": {
+            "start_line": 20,
+            "end_line": 64
+          }
+        }
+      ]
+    },
+    {
+      "id": "table:postgres:billing.invoice",
+      "kind": "table",
+      "name": "billing.invoice",
+      "confidence": "extracted",
+      "evidence": [
+        {
+          "tool": "tree-sitter",
+          "tool_version": "0.25.0",
+          "type": "source_span",
+          "path": "services/billing/migrations/0042_invoice.sql",
+          "commit": "9f3c2a1",
+          "span": {
+            "start_line": 5,
+            "end_line": 20
+          }
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:container:billing|writes|table:postgres:billing.invoice",
+      "from": "container:billing",
+      "to": "table:postgres:billing.invoice",
+      "kind": "writes",
+      "confidence": "inferred",
+      "evidence": [
+        {
+          "tool": "tree-sitter",
+          "tool_version": "0.25.0",
+          "type": "source_span",
+          "path": "services/billing/repo.py",
+          "commit": "9f3c2a1",
+          "span": {
+            "start_line": 88,
+            "end_line": 104
+          }
+        }
+      ]
+    }
+  ],
+  "coverage": {
+    "files_total": 42,
+    "files_analyzed": 42,
+    "files_skipped": 0,
+    "entry_points_identified": 3,
+    "data_stores_identified": 2,
+    "unknowns_count": 1
+  },
+  "conflicts": [
+    {
+      "id": "conflict:invoice-owner",
+      "subject": "table:postgres:billing.invoice",
+      "claims": [
+        {
+          "claim_id": "claim:owner-billing",
+          "tool": "codeboarding",
+          "tool_version": "0.8.0",
+          "value": {
+            "owner": "billing"
+          },
+          "confidence": "inferred",
+          "evidence": [
+            {
+              "tool": "codeboarding",
+              "tool_version": "0.8.0",
+              "type": "config",
+              "path": "deploy/k8s/billing.yaml",
+              "commit": "9f3c2a1"
+            }
+          ]
+        },
+        {
+          "claim_id": "claim:owner-orders",
+          "tool": "codegraph",
+          "tool_version": "1.4.0",
+          "value": {
+            "owner": "orders"
+          },
+          "confidence": "extracted",
+          "evidence": [
+            {
+              "tool": "codegraph",
+              "tool_version": "1.4.0",
+              "type": "source_span",
+              "path": "services/orders/repo.py",
+              "commit": "9f3c2a1",
+              "span": {
+                "start_line": 50,
+                "end_line": 58
+              }
+            }
+          ]
+        }
+      ],
+      "resolution": {
+        "status": "resolved",
+        "chosen": "claim:owner-billing",
+        "by": "human",
+        "reviewer": "review:1234",
+        "reason": "Billing owner confirmed the data model."
+      }
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "unknown:invoice-owner",
+      "question": "Which team owns the invoice table, and does orders read it directly?",
+      "subject": "table:postgres:billing.invoice",
+      "impact": "high",
+      "owner": "billing-team"
+    }
+  ]
+}

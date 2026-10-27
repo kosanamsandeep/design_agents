@@ -1,0 +1,46 @@
+{
+  "path": [
+    {"input": "services\\billing\\api.py", "expected": "services/billing/api.py"},
+    {"input": "./services/billing/", "expected": "services/billing"},
+    {"input": "services//billing/api.py", "expected": "services/billing/api.py"},
+    {"input": "/services/billing", "expected": "services/billing"},
+    {"input": ".", "expected": "."}
+  ],
+  "route": [
+    {"method": "POST", "path": "/invoices/{invoice_id}/", "expected": "route:post:/invoices/{param}"},
+    {"method": "get", "path": "invoices/:id?tab=x", "expected": "route:get:/invoices/{param}"},
+    {"method": "GET", "path": "/", "expected": "route:get:/"},
+    {"method": "PUT", "path": "/a//b/", "expected": "route:put:/a/b"},
+    {"method": "DELETE", "path": "/invoices/<id>#frag", "expected": "route:delete:/invoices/{param}"}
+  ],
+  "qualified_name": [
+    {
+      "language": "python",
+      "module": "services.billing.model",
+      "name": "Invoice.issue",
+      "parameter_types": [],
+      "expected": "services.billing.model.Invoice.issue"
+    },
+    {
+      "language": "java",
+      "module": "com.acme.billing",
+      "name": "Invoice#issue",
+      "parameter_types": ["java.lang.String"],
+      "expected": "com.acme.billing.Invoice#issue@73cc7ce3"
+    },
+    {
+      "language": "typescript",
+      "module": "src/billing/api",
+      "name": "createInvoice",
+      "parameter_types": [],
+      "expected": "src/billing/api#createInvoice"
+    },
+    {
+      "language": "go",
+      "module": "billing",
+      "name": "Service.Charge",
+      "parameter_types": [],
+      "expected": "billing.Service.Charge"
+    }
+  ]
+}

@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legacy Lens — Delivery Plan &amp; Status</title>
+    <meta name="description" content="Internal-only reframing, mature-tools-first baseline, 10-week delivery plan, status board, bake-off, and bank controls.">
+    <style>
+        :root {
+            --bg: #f4efe6;
+            --paper: #fffaf2;
+            --ink: #1c1917;
+            --muted: #5f564d;
+            --line: #d9ccb8;
+            --accent: #0f766e;
+            --accent-soft: #d7f3ef;
+            --warm: #c2410c;
+            --warm-soft: #fde8db;
+            --good: #166534;
+            --good-soft: #dcfce7;
+            --bad: #991b1b;
+            --bad-soft: #fee2e2;
+            --code-bg: #1c1917;
+            --code-ink: #f5f1e8;
+            --radius: 16px;
+            --shadow: 0 18px 40px rgba(28, 25, 23, 0.08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", "SF Mono", monospace;
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--ink);
+            line-height: 1.65;
+            background:
+                radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28%),
+                radial-gradient(circle at top right, rgba(194, 65, 12, 0.13), transparent 24%),
+                linear-gradient(180deg, #faf5ec 0%, #f4efe6 100%);
+        }
+
+        a { color: var(--accent); }
+        a:hover { text-decoration: underline; }
+
+        header.site {
+            padding: 16px 0 12px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 250, 242, 0.88);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .shell { width: min(1220px, calc(100% - 32px)); margin: 0 auto; }
+
+        .title-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; flex-wrap: wrap;
+        }
+
+        .brand {
+            display: inline-flex; align-items: center; gap: 12px;
+            font-weight: 700; text-decoration: none; color: var(--ink);
+        }
+
+        .brand-mark {
+            width: 42px; height: 42px; display: inline-grid; place-items: center;
+            border-radius: 12px; background: linear-gradient(135deg, var(--accent), #115e59);
+            color: #fff; font-size: 0.9rem; box-shadow: var(--shadow);
+        }
+
+        .brand small {
+            display: block; font-weight: 600; color: var(--muted);
+            font-size: 0.72rem; letter-spacing: 0.04em;
+        }
+
+        .top-links { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; align-items: center; }
+
+        .top-links a, .top-links button {
+            color: var(--accent); text-decoration: none; border: 1px solid var(--line);
+            background: var(--paper); padding: 7px 12px; border-radius: 999px;
+            cursor: pointer; font: inherit;
+        }
+
+        .top-links a:hover, .top-links button:hover { background: var(--accent-soft); text-decoration: none; }
+
+        main { padding: 28px 0 80px; }
+
+        .layout { display: grid; grid-template-columns: 270px 1fr; gap: 24px; align-items: start; }
+        .layout > div { min-width: 0; }
+
+        .toc {
+            position: sticky; top: 84px; background: var(--paper);
+            border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 16px 14px 14px; box-shadow: var(--shadow);
+            max-height: calc(100vh - 104px); overflow-y: auto;
+        }
+
+        .toc h3 {
+            margin: 0 0 8px 6px; font-size: 0.72rem; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--muted);
+        }
+
+        .toc ol { list-style: none; padding: 0; margin: 0; }
+        .toc li { margin: 1px 0; }
+
+        .toc a {
+            display: block; padding: 5px 8px; border-radius: 8px; color: var(--ink);
+            text-decoration: none; font-size: 0.85rem; border-left: 3px solid transparent;
+        }
+
+        .toc a:hover { background: var(--accent-soft); color: var(--accent); }
+        .toc a.active {
+            background: var(--accent-soft); color: var(--accent);
+            border-left-color: var(--accent); font-weight: 600;
+        }
+
+        .toc .group {
+            margin: 14px 0 3px 8px; font-size: 0.65rem; text-transform: uppercase;
+            letter-spacing: 0.12em; color: var(--warm); font-weight: 700;
+        }
+
+        .hero {
+            background: var(--paper); border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 30px 34px;
+            box-shadow: var(--shadow); margin-bottom: 22px;
+        }
+
+        .hero h1 { margin: 8px 0 12px; font-size: 2rem; line-height: 1.2; letter-spacing: -0.01em; }
+        .eyebrow {
+            text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.72rem;
+            color: var(--warm); margin: 0; font-weight: 700;
+        }
+        .hero p { margin: 8px 0; color: var(--muted); }
+        .meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+        .pill {
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px;
+            border-radius: 999px; border: 1px solid var(--line); background: #fffdf7;
+            font-size: 0.75rem; color: var(--muted);
+        }
+
+        .pill.verified { border-color: #86efac; background: var(--good-soft); color: var(--good); }
+        .pill.warn { border-color: #fdba74; background: var(--warm-soft); color: var(--warm); }
+        .pill.bad { border-color: #fca5a5; background: var(--bad-soft); color: var(--bad); }
+
+        section.card {
+            background: var(--paper); border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 26px 30px;
+            box-shadow: var(--shadow); margin-bottom: 20px; scroll-margin-top: 90px;
+        }
+
+        section.card h2 {
+            margin: 0 0 6px; font-size: 1.45rem; display: flex;
+            align-items: baseline; gap: 12px; flex-wrap: wrap;
+        }
+
+        section.card h2 .num {
+            color: var(--warm); font-variant-numeric: tabular-nums;
+            font-size: 0.95rem; font-weight: 800; letter-spacing: 0.06em;
+        }
+
+        section.card h3 { margin-top: 26px; margin-bottom: 8px; font-size: 1.08rem; scroll-margin-top: 90px; }
+        h4 { margin: 16px 0 6px; font-size: 0.98rem; }
+        p { margin: 8px 0; }
+        ul, ol { margin: 8px 0 10px 22px; padding: 0; }
+        li { margin: 5px 0; }
+
+        code {
+            font-family: var(--mono); background: #efe7d6; color: #1c1917;
+            padding: 1px 6px; border-radius: 5px; font-size: 0.88em;
+        }
+
+        pre {
+            background: var(--code-bg); color: var(--code-ink); padding: 14px 16px;
+            border-radius: 10px; overflow-x: auto; font-size: 0.82rem;
+            line-height: 1.55;
+        }
+
+        pre code { background: transparent; color: inherit; padding: 0; }
+
+        .badge {
+            display: inline-block; padding: 2px 9px; border-radius: 999px;
+            font-size: 0.66rem; font-weight: 700; background: var(--accent-soft);
+            color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .badge.warm { background: var(--warm-soft); color: var(--warm); }
+        .badge.good { background: var(--good-soft); color: var(--good); }
+        .badge.bad { background: var(--bad-soft); color: var(--bad); }
+        .badge.gray { background: #efe7d6; color: var(--muted); }
+
+        .callout {
+            border-left: 4px solid var(--accent); background: var(--accent-soft);
+            padding: 12px 15px; border-radius: 8px; margin: 14px 0;
+        }
+
+        .callout.warn { border-left-color: var(--warm); background: var(--warm-soft); }
+        .callout.danger { border-left-color: var(--bad); background: var(--bad-soft); }
+        .callout.good { border-left-color: var(--good); background: var(--good-soft); }
+        .callout strong:first-child { display: block; margin-bottom: 3px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+        .mini {
+            border: 1px solid var(--line); border-radius: 12px;
+            padding: 14px 16px; background: #fffdf7;
+        }
+
+        .mini.good { border-color: #86efac; background: var(--good-soft); }
+        .mini.bad { border-color: #fca5a5; background: var(--bad-soft); }
+        .mini.warn { border-color: #fdba74; background: var(--warm-soft); }
+        .mini h4 { margin-top: 0; }
+
+        .kpis {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px; margin: 16px 0 6px;
+        }
+
+        .kpi {
+            border: 1px solid var(--line); border-radius: 12px;
+            padding: 13px 14px; background: #fffdf7;
+        }
+
+        .kpi .v { font-size: 1.3rem; font-weight: 800; color: var(--accent); line-height: 1.2; }
+        .kpi .l { font-size: 0.76rem; color: var(--muted); margin-top: 3px; }
+        .kpi.warn .v { color: var(--warm); }
+        .kpi.bad .v { color: var(--bad); }
+
+        .table-wrap {
+            overflow-x: auto; border: 1px solid var(--line);
+            border-radius: 10px; margin: 14px 0;
+        }
+
+        table {
+            width: 100%; border-collapse: collapse; font-size: 0.86rem;
+            background: #fffdf7;
+        }
+
+        th, td {
+            border-bottom: 1px solid var(--line); padding: 9px 11px;
+            text-align: left; vertical-align: top;
+        }
+
+        th {
+            background: var(--accent-soft); color: var(--accent);
+            font-weight: 700; position: sticky; top: 0; z-index: 1;
+            white-space: nowrap;
+        }
+
+        tbody tr:nth-child(even) { background: #fdf9f0; }
+        tbody tr:hover { background: var(--accent-soft); }
+        td.num { font-variant-numeric: tabular-nums; }
+
+        .mermaid-wrap {
+            background: #fffdf7; border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 18px 16px 10px;
+            margin: 16px 0; box-shadow: 0 8px 22px rgba(28, 25, 23, 0.05);
+            overflow-x: auto;
+        }
+
+        .mermaid-wrap .caption {
+            color: var(--muted); font-size: 0.82rem; margin: 10px 4px 2px;
+            font-style: italic; text-align: center;
+        }
+
+        .diagram-svg svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+        .diagram-src { margin: 8px auto 2px; }
+
+        .diagram-src summary {
+            cursor: pointer; font-size: 0.76rem; color: var(--muted);
+            text-align: center; padding: 2px 6px;
+        }
+
+        .diagram-src summary:hover { color: var(--accent); }
+        .diagram-src pre { margin: 8px 0 2px; text-align: left; }
+
+        .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 0.9rem; margin: 10px 0; }
+        .kv dt { font-weight: 700; color: var(--muted); }
+        .kv dd { margin: 0; }
+
+        footer { text-align: center; color: var(--muted); font-size: 0.82rem; padding: 30px 0 10px; }
+
+        .to-top {
+            position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+            border-radius: 50%; border: 1px solid var(--line); background: var(--paper);
+            color: var(--accent); box-shadow: var(--shadow); font-size: 1.1rem;
+            cursor: pointer; opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease; z-index: 40;
+        }
+
+        .to-top.show { opacity: 1; pointer-events: auto; }
+
+        .skip-link {
+            position: absolute; left: -999px; top: 0; background: var(--paper);
+            padding: 10px 16px; border: 1px solid var(--line);
+            border-radius: 0 0 8px 0; z-index: 100;
+        }
+
+        .skip-link:focus { left: 0; }
+
+        @media (max-width: 960px) {
+            .layout { grid-template-columns: 1fr; }
+            .toc { position: static; max-height: none; }
+            .toc ol { columns: 2; column-gap: 18px; }
+        }
+
+        @media (max-width: 720px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .hero { padding: 22px; }
+            .hero h1 { font-size: 1.55rem; }
+            section.card { padding: 20px; }
+            .toc ol { columns: 1; }
+        }
+
+        @media print {
+            header.site, .toc, .to-top, .toolbar, .top-links, .skip-link { display: none !important; }
+            body { background: #fff; }
+            .layout { grid-template-columns: 1fr; }
+            section.card, .hero, .mermaid-wrap { box-shadow: none; break-inside: avoid; border-color: #bbb; }
+            a { color: #111; text-decoration: none; }
+            pre { white-space: pre-wrap; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .to-top { transition: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site">
+        <div class="shell title-row">
+            <a class="brand" href="#top">
+                <span class="brand-mark">DP</span>
+                <span>Delivery Plan<small>Legacy Lens · internal-only premise · 27 Oct 2026</small></span>
+            </a>
+            <nav class="top-links" aria-label="Page tools">
+                <a href="stack-decision-record.html">ADR</a>
+                <a href="hld-lld-recovery-blueprint.html">Blueprint</a>
+                <a href="evidence-schema.md">Schema</a>
+                <a href="#status">Status</a>
+                <a href="#plan">Plan</a>
+                <a href="#bakeoff">Bake-off</a>
+                <a href="#gates">Gates</a>
+                <button type="button" id="downloadBtn" title="Save a copy of this page">⬇ Download</button>
+                <button type="button" onclick="window.print()" title="Print or save as PDF">🖨 Print</button>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main">
+        <div class="shell">
+            <div class="layout">
+
+                <aside class="toc" aria-label="Table of contents">
+                    <h3>Contents</h3>
+                    <ol>
+                        <li><a href="#status">00 · Status at a glance</a></li>
+                        <li><a href="#premise">01 · What changed</a></li>
+                        <li><a href="#decision">02 · Revised decision</a></li>
+                        <li><a href="#stack">03 · Revised stack</a></li>
+                        <li><a href="#languages">03b · Language coverage</a></li>
+                        <li class="group">Plan</li>
+                        <li><a href="#workstreams">04 · Workstreams</a></li>
+                        <li><a href="#plan">05 · 10-week plan</a></li>
+                        <li><a href="#first10">06 · First 10 working days</a></li>
+                        <li><a href="#bakeoff">07 · Bake-off</a></li>
+                        <li><a href="#golden">08 · Golden repos</a></li>
+                        <li class="group">Controls</li>
+                        <li><a href="#gates">09 · Gates &amp; bank controls</a></li>
+                        <li><a href="#risks">10 · Risks &amp; open decisions</a></li>
+                        <li><a href="#exit">11 · Exit criteria</a></li>
+                        <li><a href="#links">12 · Links</a></li>
+                    </ol>
+                </aside>
+
+                <div>
+                    <!-- ============ HERO ============ -->
+                    <section class="hero" id="top">
+                        <p class="eyebrow">Delivery plan &amp; status · 27 October 2026</p>
+                        <h1>How we are doing — and how we get this live</h1>
+                        <p><strong>Premise change:</strong> this is an <strong>internal-only</strong> capability run on
+                            the bank's own repositories. The redistributable licence gate is superseded by the bank's
+                            open-source intake, SBOM, and internal-use policy. That changes the stack: mature tools
+                            first, optional graph engines only if they earn their place.</p>
+                        <p><strong>Current position:</strong> discovery and the evidence contract are done enough to
+                            start the first vertical slice. The pilot has not started; measured results do not exist
+                            yet.</p>
+                        <div class="meta-row">
+                            <span class="pill verified">✓ Contract tests pass</span>
+                            <span class="pill warn">Pilot not started</span>
+                            <span class="pill warn">Measured score: TBD</span>
+                            <span class="pill">Diagrams embedded · works offline</span>
+                        </div>
+                        <div class="callout warn" style="margin-top:18px">
+                            <strong>The one-line answer to “how are we doing?”</strong>
+                            Phase 0 is complete: the architecture, the licence facts, and the evidence contract are
+                            in place. Phase 1 starts now: bank intake, golden-repo labeling, and the SCIP +
+                            tree-sitter vertical slice. Serena and Semgrep are back in the baseline under
+                            internal-use policy; Graphify, CodeGraph, and CodeBoarding are optional until the
+                            bake-off measures a win.
+                        </div>
+                    </section>
+
+                    <!-- ============ 00 STATUS ============ -->
+                    <section class="card" id="status">
+                        <h2><span class="num">00</span> Status at a glance</h2>
+
+                        <div class="kpis">
+                            <div class="kpi"><div class="v">4</div><div class="l">workstreams done or ready</div></div>
+                            <div class="kpi warn"><div class="v">3</div><div class="l">in progress now</div></div>
+                            <div class="kpi"><div class="v">5</div><div class="l">next milestones</div></div>
+                            <div class="kpi bad"><div class="v">5</div><div class="l">inputs needed from you</div></div>
+                        </div>
+
+                        <h3>Done</h3>
+                        <ul>
+                            <li><strong>Research &amp; blueprint</strong> — tool landscape, recovery techniques, migration failure modes, references.</li>
+                            <li><strong>ADR &amp; corrections</strong> — OpenRewrite MSAL verified, scorecard split, licence/security/migration gates made explicit.</li>
+                            <li><strong>Evidence contract v1 draft</strong> — JSON Schema, semantic validator, 3 valid + 14 invalid fixtures, 14 canonicalization cases passing.</li>
+                            <li><strong>Premise reframing</strong> — internal-only use, mature-tools baseline, optional graph engines, bank intake replaces the redistributable gate.</li>
+                        </ul>
+
+                        <h3>In progress</h3>
+                        <ul>
+                            <li><strong>Intake, SBOM &amp; legal</strong> — open-source intake tickets, internal-use attestation, MSAL/contractor review.</li>
+                            <li><strong>Golden repo selection</strong> — clean service, large monolith, polyglot/dynamic app; labelers being nominated.</li>
+                            <li><strong>First vertical slice</strong> — SCIP + tree-sitter adapters against the v1 contract on one small repository.</li>
+                        </ul>
+
+                        <h3>Next</h3>
+                        <ul>
+                            <li>Serena (symbols/references), Joern (data flow), and Semgrep (patterns/taint) adapters.</li>
+                            <li>Merge + semantic validation layer; first HLD/LLD on the pilot.</li>
+                            <li>Bake-off: Graphify, CodeGraph, CodeBoarding as optional add-ons.</li>
+                            <li>Migration oracle tooling and one end-to-end slice with canary/rollback.</li>
+                            <li>Internal plugin, runbooks, evals in CI, onboarding a second team.</li>
+                        </ul>
+
+                        <h3>Inputs needed from you</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Input</th><th>Why it blocks</th><th>Needed by</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Pilot repository + owner</td><td>The vertical slice needs a real codebase and a maintainer for sign-off.</td><td>Week 1</td></tr>
+                                    <tr><td>Language inventory (top 3–5, LOC)</td><td>Determines the Tier A/B/C split and the pilot language.</td><td>Week 1</td></tr>
+                                    <tr><td>Three golden repos + labelers</td><td>Labeling has the longest lead time; measured scores depend on it.</td><td>Week 1–2</td></tr>
+                                    <tr><td>Approved model endpoint + model-risk path</td><td>No model call without approved data handling and sign-off.</td><td>Week 2</td></tr>
+                                    <tr><td>OSS intake / legal contact</td><td>GPL/LGPL, MSAL, contractors/vendors, and notices need a decision.</td><td>Week 1</td></tr>
+                                    <tr><td>Migration route preference</td><td>MSAL recipes vs own Apache-core recipes vs Moderne procurement changes the plan.</td><td>Week 2</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="callout">
+                            <strong>Status is milestone-based, not a percentage</strong>
+                            We are “done” on a workstream only when its exit evidence exists — a passing contract
+                            suite, a signed-off HLD, a measured bake-off, or a completed migration slice.
+                        </div>
+                    </section>
+
+                    <!-- ============ 01 PREMISE ============ -->
+                    <section class="card" id="premise">
+                        <h2><span class="num">01</span> What changed</h2>
+
+                        <div class="mermaid-wrap">
+                            <div class="diagram-svg"><svg id="dp-diagram-1" xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 1124.1728515625 150" role="img" aria-label="The licence gate was doing the work of a procurement policy.
+                                Internal-only use replaces it with bank intake + SBOM; maturity becomes the
+                                tie-breaker." style="max-width:100%;height:auto;"><style>#dp-diagram-1{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;fill:#1c1917;}#dp-diagram-1 .error-icon{fill:#fffaf2;}#dp-diagram-1 .error-text{fill:#00050d;stroke:#00050d;}#dp-diagram-1 .edge-thickness-normal{stroke-width:2px;}#dp-diagram-1 .edge-thickness-thick{stroke-width:3.5px;}#dp-diagram-1 .edge-pattern-solid{stroke-dasharray:0;}#dp-diagram-1 .edge-pattern-dashed{stroke-dasharray:3;}#dp-diagram-1 .edge-pattern-dotted{stroke-dasharray:2;}#dp-diagram-1 .marker{fill:#5f564d;stroke:#5f564d;}#dp-diagram-1 .marker.cross{stroke:#5f564d;}#dp-diagram-1 svg{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;}#dp-diagram-1 .label{font-family:Segoe UI,Aptos,system-ui,sans-serif;color:#1c1917;}#dp-diagram-1 .cluster-label text{fill:#00050d;}#dp-diagram-1 .cluster-label span,#dp-diagram-1 p{color:#00050d;}#dp-diagram-1 .label text,#dp-diagram-1 span,#dp-diagram-1 p{fill:#1c1917;color:#1c1917;}#dp-diagram-1 .node rect,#dp-diagram-1 .node circle,#dp-diagram-1 .node ellipse,#dp-diagram-1 .node polygon,#dp-diagram-1 .node path{fill:#d7f3ef;stroke:#0f766e;stroke-width:1px;}#dp-diagram-1 .flowchart-label text{text-anchor:middle;}#dp-diagram-1 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dp-diagram-1 .node .label{text-align:center;}#dp-diagram-1 .node.clickable{cursor:pointer;}#dp-diagram-1 .arrowheadPath{fill:#0b0b0b;}#dp-diagram-1 .edgePath .path{stroke:#5f564d;stroke-width:2.0px;}#dp-diagram-1 .flowchart-link{stroke:#5f564d;fill:none;}#dp-diagram-1 .edgeLabel{background-color:#fde8db;text-align:center;}#dp-diagram-1 .edgeLabel rect{opacity:0.5;background-color:#fde8db;fill:#fde8db;}#dp-diagram-1 .labelBkg{background-color:rgba(253, 232, 219, 0.5);}#dp-diagram-1 .cluster rect{fill:#fffdf7;stroke:#d9ccb8;stroke-width:1px;}#dp-diagram-1 .cluster text{fill:#00050d;}#dp-diagram-1 .cluster span,#dp-diagram-1 p{color:#00050d;}#dp-diagram-1 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:12px;background:#fffaf2;border:1px solid #d9ccb8;border-radius:2px;pointer-events:none;z-index:100;}#dp-diagram-1 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c1917;}#dp-diagram-1 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="dp1-dp-diagram-1_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp1-dp-diagram-1_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp1-dp-diagram-1_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp1-dp-diagram-1_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp1-dp-diagram-1_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="dp1-dp-diagram-1_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M166.969,21L171.135,21C175.302,21,183.635,21,196.455,21C209.275,21,226.581,21,235.234,21L243.888,21" id="dp1-L-A-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#dp1-dp-diagram-1_flowchart-pointEnd)"></path><path d="M385.859,21L395.396,21C404.932,21,424.005,21,438.799,21C453.593,21,464.108,21,469.365,21L474.622,21" id="dp1-L-B-C-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-C" style="fill:none;" marker-end="url(#dp1-dp-diagram-1_flowchart-pointEnd)"></path><path d="M148.422,113L155.68,113C162.938,113,177.453,113,187.994,113C198.535,113,205.102,113,208.385,113L211.669,113" id="dp1-L-D-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-E" style="fill:none;" marker-end="url(#dp1-dp-diagram-1_flowchart-pointEnd)"></path><path d="M418.078,113L422.245,113C426.411,113,434.745,113,442.195,113C449.645,113,456.211,113,459.495,113L462.778,113" id="dp1-L-E-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-F" style="fill:none;" marker-end="url(#dp1-dp-diagram-1_flowchart-pointEnd)"></path><path d="M782.251,113L786.418,113C790.584,113,798.918,113,806.368,113C813.818,113,820.384,113,823.668,113L826.951,113" id="dp1-L-F-G-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-F LE-G" style="fill:none;" marker-end="url(#dp1-dp-diagram-1_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="dp1-flowchart-A-0" data-node="true" data-id="dp1-A" transform="translate(83.484375, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-83.484375" y="-21" width="166.96875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Old premise</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">redistributable bundle</tspan></text></g></g><g class="node default default flowchart-label" id="dp1-flowchart-B-1" data-node="true" data-id="dp1-B" transform="translate(317.5234375, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-68.3359375" y="-21" width="136.671875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Hard licence gate</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">MIT / Apache only</tspan></text></g></g><g class="node default default flowchart-label" id="dp1-flowchart-C-3" data-node="true" data-id="dp1-C" transform="translate(625.16455078125, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-145.2421875" y="-21" width="290.484375" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Exotic graph-first stack</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Graphify + CodeGraph + CodeBoarding</tspan></text></g></g><g class="node default default flowchart-label" id="dp1-flowchart-D-4" data-node="true" data-id="dp1-D" transform="translate(83.484375, 113)"><rect class="basic label-container" style="" rx="0" ry="0" x="-64.9375" y="-21" width="129.875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">New premise</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">internal-only use</tspan></text></g></g><g class="node default default flowchart-label" id="dp1-flowchart-E-5" data-node="true" data-id="dp1-E" transform="translate(317.5234375, 113)"><rect class="basic label-container" style="" rx="0" ry="0" x="-100.5546875" y="-21" width="201.109375" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Bank OSS intake + SBOM</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">no redistribution or service</tspan></text></g></g><g class="node default default flowchart-label" id="dp1-flowchart-F-7" data-node="true" data-id="dp1-F" transform="translate(625.16455078125, 113)"><rect class="basic label-container" style="" rx="0" ry="0" x="-157.08642578125" y="-21" width="314.1728515625" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Mature baseline</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">SCIP · tree-sitter · Serena · Joern · Semgrep</tspan></text></g></g><g class="node default default flowchart-label" id="dp1-flowchart-G-9" data-node="true" data-id="dp1-G" transform="translate(970.2119140625, 113)"><rect class="basic label-container" style="" rx="0" ry="0" x="-137.9609375" y="-21" width="275.921875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Bake-off optional engines</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Graphify · CodeGraph · CodeBoarding</tspan></text></g></g></g></g></g></svg></div>
+                            <p class="caption">The licence gate was doing the work of a procurement policy.
+                                Internal-only use replaces it with bank intake + SBOM; maturity becomes the
+                                tie-breaker.</p>
+                            <details class="diagram-src">
+                                <summary>Diagram source (Mermaid)</summary>
+                                <pre><code>flowchart LR
+    A[&quot;Old premise&lt;br/&gt;redistributable bundle&quot;] --&gt; B[&quot;Hard licence gate&lt;br/&gt;MIT / Apache only&quot;]
+    B --&gt; C[&quot;Exotic graph-first stack&lt;br/&gt;Graphify + CodeGraph + CodeBoarding&quot;]
+    D[&quot;New premise&lt;br/&gt;internal-only use&quot;] --&gt; E[&quot;Bank OSS intake + SBOM&lt;br/&gt;no redistribution or service&quot;]
+    E --&gt; F[&quot;Mature baseline&lt;br/&gt;SCIP · tree-sitter · Serena · Joern · Semgrep&quot;]
+    F --&gt; G[&quot;Bake-off optional engines&lt;br/&gt;Graphify · CodeGraph · CodeBoarding&quot;]</code></pre>
+                            </details>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="mini good">
+                                <h4>What opens up</h4>
+                                <ul>
+                                    <li><strong>GPL/LGPL/MPL/EPL tools</strong> — Serena, Semgrep OSS, pyreverse, PlantUML, EvoSuite, D2, Graphviz — internally, unmodified, subject to bank policy.</li>
+                                    <li><strong>OpenRewrite MSAL recipes</strong> — migrate-java, spring, testing-frameworks, static-analysis, logging — usable internally; check contractors/vendors as third parties.</li>
+                                    <li><strong>Mature tooling</strong> — SCIP, tree-sitter, Serena, Joern, Semgrep, Structurizr, Mermaid, PlantUML.</li>
+                                </ul>
+                            </div>
+                            <div class="mini bad">
+                                <h4>What stays blocked or needs review</h4>
+                                <ul>
+                                    <li><strong>Moderne Proprietary</strong> — java-security, kubernetes, sql, Spring/Hibernate sets: commercial contract.</li>
+                                    <li><strong>CodeQL CLI</strong> — private commercial code likely needs GitHub Advanced Security; verify.</li>
+                                    <li><strong>AGPL (TruffleHog)</strong> — often banned by bank policy; gitleaks avoids the question.</li>
+                                    <li><strong>Sourcegraph / AWS Transform</strong> — third-party risk review.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="callout good">
+                            <strong>What does not change</strong>
+                            Evidence-or-nothing, the independent critic, golden-repo evaluation, human sign-off on
+                            boundaries, and the migration gates. Those are about correctness, not licensing.
+                        </div>
+                    </section>
+
+                    <!-- ============ 02 DECISION ============ -->
+                    <section class="card" id="decision">
+                        <h2><span class="num">02</span> Revised decision</h2>
+                        <p>The baseline is now the mature toolchain. The graph engines are optional extras that are
+                            <strong>actively tested in the bake-off</strong>; they must beat the baseline on a measured
+                            metric to be promoted, and they are no longer the foundation.</p>
+
+                        <div class="mermaid-wrap">
+                            <div class="diagram-svg"><svg id="dp-diagram-2" xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 766.75 164" role="img" aria-label="Mature baseline first; optional engines must show a measured,
+                                non-overlapping win before they are enabled for a repository." style="max-width:100%;height:auto;"><style>#dp-diagram-2{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;fill:#1c1917;}#dp-diagram-2 .error-icon{fill:#fffaf2;}#dp-diagram-2 .error-text{fill:#00050d;stroke:#00050d;}#dp-diagram-2 .edge-thickness-normal{stroke-width:2px;}#dp-diagram-2 .edge-thickness-thick{stroke-width:3.5px;}#dp-diagram-2 .edge-pattern-solid{stroke-dasharray:0;}#dp-diagram-2 .edge-pattern-dashed{stroke-dasharray:3;}#dp-diagram-2 .edge-pattern-dotted{stroke-dasharray:2;}#dp-diagram-2 .marker{fill:#5f564d;stroke:#5f564d;}#dp-diagram-2 .marker.cross{stroke:#5f564d;}#dp-diagram-2 svg{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;}#dp-diagram-2 .label{font-family:Segoe UI,Aptos,system-ui,sans-serif;color:#1c1917;}#dp-diagram-2 .cluster-label text{fill:#00050d;}#dp-diagram-2 .cluster-label span,#dp-diagram-2 p{color:#00050d;}#dp-diagram-2 .label text,#dp-diagram-2 span,#dp-diagram-2 p{fill:#1c1917;color:#1c1917;}#dp-diagram-2 .node rect,#dp-diagram-2 .node circle,#dp-diagram-2 .node ellipse,#dp-diagram-2 .node polygon,#dp-diagram-2 .node path{fill:#d7f3ef;stroke:#0f766e;stroke-width:1px;}#dp-diagram-2 .flowchart-label text{text-anchor:middle;}#dp-diagram-2 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dp-diagram-2 .node .label{text-align:center;}#dp-diagram-2 .node.clickable{cursor:pointer;}#dp-diagram-2 .arrowheadPath{fill:#0b0b0b;}#dp-diagram-2 .edgePath .path{stroke:#5f564d;stroke-width:2.0px;}#dp-diagram-2 .flowchart-link{stroke:#5f564d;fill:none;}#dp-diagram-2 .edgeLabel{background-color:#fde8db;text-align:center;}#dp-diagram-2 .edgeLabel rect{opacity:0.5;background-color:#fde8db;fill:#fde8db;}#dp-diagram-2 .labelBkg{background-color:rgba(253, 232, 219, 0.5);}#dp-diagram-2 .cluster rect{fill:#fffdf7;stroke:#d9ccb8;stroke-width:1px;}#dp-diagram-2 .cluster text{fill:#00050d;}#dp-diagram-2 .cluster span,#dp-diagram-2 p{color:#00050d;}#dp-diagram-2 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:12px;background:#fffaf2;border:1px solid #d9ccb8;border-radius:2px;pointer-events:none;z-index:100;}#dp-diagram-2 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c1917;}#dp-diagram-2 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="dp2-dp-diagram-2_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp2-dp-diagram-2_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp2-dp-diagram-2_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp2-dp-diagram-2_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp2-dp-diagram-2_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="dp2-dp-diagram-2_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M232.313,28L243.747,28C255.182,28,278.052,28,292.774,28.313C307.496,28.625,314.071,29.25,317.358,29.563L320.646,29.875" id="dp2-L-BASE-SYN-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-BASE LE-SYN" style="fill:none;" marker-end="url(#dp2-dp-diagram-2_flowchart-pointEnd)"></path><path d="M486.297,38L490.464,38C494.63,38,502.964,38,512.7,39.664C522.436,41.328,533.576,44.655,539.145,46.319L544.715,47.983" id="dp2-L-SYN-CHG-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-SYN LE-CHG" style="fill:none;" marker-end="url(#dp2-dp-diagram-2_flowchart-pointEnd)"></path><path d="M224.598,106L237.319,102.917C250.04,99.833,275.481,93.667,295.017,87.376C314.553,81.086,328.183,74.671,334.999,71.464L341.814,68.257" id="dp2-L-OPT-SYN-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-OPT LE-SYN" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#dp2-dp-diagram-2_flowchart-pointEnd)"></path><path d="M275.922,135.466L280.089,135.722C284.255,135.977,292.589,136.489,314.286,136.744C335.984,137,371.047,137,406.109,137C441.172,137,476.234,137,504.627,132.112C533.02,127.225,554.743,117.45,565.604,112.562L576.466,107.675" id="dp2-L-OPT-CHG-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-OPT LE-CHG" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#dp2-dp-diagram-2_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="dp2-flowchart-BASE-10" data-node="true" data-id="dp2-BASE" transform="translate(137.9609375, 28)"><rect class="basic label-container" style="" rx="0" ry="0" x="-94.3515625" y="-28" width="188.703125" height="56"></rect><g class="label" style="" transform="translate(0, -22)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">BASELINE</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">SCIP · tree-sitter · Serena</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Joern · Semgrep</tspan></text></g></g><g class="node default default flowchart-label" id="dp2-flowchart-SYN-11" data-node="true" data-id="dp2-SYN" transform="translate(406.109375, 38)"><rect class="basic label-container" style="" rx="0" ry="0" x="-80.1875" y="-28" width="160.375" height="56"></rect><g class="label" style="" transform="translate(0, -22)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">SYNTHESIS</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Structurizr · Mermaid</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">PlantUML (optional)</tspan></text></g></g><g class="node default default flowchart-label" id="dp2-flowchart-CHG-13" data-node="true" data-id="dp2-CHG" transform="translate(643.5234375, 77.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-107.2265625" y="-28" width="214.453125" height="56"></rect><g class="label" style="" transform="translate(0, -22)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">CHANGE</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">OpenRewrite MSAL (internal)</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">ast-grep · gitleaks · Trivy</tspan></text></g></g><g class="node default default flowchart-label" id="dp2-flowchart-OPT-14" data-node="true" data-id="dp2-OPT" transform="translate(137.9609375, 127)"><rect class="basic label-container" style="" rx="0" ry="0" x="-137.9609375" y="-21" width="275.921875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">OPTIONAL — bake-off</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Graphify · CodeGraph · CodeBoarding</tspan></text></g></g></g></g></g></svg></div>
+                            <p class="caption">Mature baseline first; optional engines must show a measured,
+                                non-overlapping win before they are enabled for a repository.</p>
+                            <details class="diagram-src">
+                                <summary>Diagram source (Mermaid)</summary>
+                                <pre><code>flowchart LR
+    BASE[&quot;BASELINE&lt;br/&gt;SCIP · tree-sitter · Serena&lt;br/&gt;Joern · Semgrep&quot;] --&gt; SYN[&quot;SYNTHESIS&lt;br/&gt;Structurizr · Mermaid&lt;br/&gt;PlantUML (optional)&quot;]
+    SYN --&gt; CHG[&quot;CHANGE&lt;br/&gt;OpenRewrite MSAL (internal)&lt;br/&gt;ast-grep · gitleaks · Trivy&quot;]
+    OPT[&quot;OPTIONAL — bake-off&lt;br/&gt;Graphify · CodeGraph · CodeBoarding&quot;] -.-&gt; SYN
+    OPT -.-&gt; CHG</code></pre>
+                            </details>
+                        </div>
+
+                        <div class="callout">
+                            <strong>Graphify and CodeGraph are not dropped — they are candidates, not baseline</strong>
+                            The baseline deliberately excludes them so the bake-off measures <em>replacement</em>,
+                            not the benefit of combining engines. Both are tested in Phase 3 (week 6) as separate
+                            experiments. If either wins on a measured metric, it is promoted for the repo profile
+                            where it wins; if not, it is dropped.
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Candidate</th><th>What it adds</th><th>Promote if</th><th>Stay optional / drop if</th></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Graphify</strong></td>
+                                        <td>Whole-repo graph, communities, call-flow, HLD edge evidence</td>
+                                        <td>Measured edge-recall or boundary-F1 gain on the messy repo at acceptable cost</td>
+                                        <td>Gain only on one profile → enable there; no gain or operational risk → drop</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>CodeGraph</strong></td>
+                                        <td>Call paths, blast radius, framework routes for LLD and migration</td>
+                                        <td>Measured flow-recall or blast-radius precision gain</td>
+                                        <td>Gain only on migration-heavy repos → enable there; no gain or maintainer risk unacceptable → drop</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>CodeBoarding</strong></td>
+                                        <td>Path-based boundary proposals</td>
+                                        <td>Boundary F1 gain, including a messy legacy repo</td>
+                                        <td>No gain over the path-first baseline → drop; use only as a proposer</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3>The scorecard, honestly</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Option</th><th>Design score</th><th>Measured</th><th>Intake posture</th></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Mature baseline</strong><br><span class="badge good">Recommended</span></td>
+                                        <td class="num">4.1–4.3 <em>indicative</em></td>
+                                        <td>TBD</td>
+                                        <td>Bank OSS intake + SBOM; GPL/LGPL internal, unmodified.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Baseline + optional graph engines</strong></td>
+                                        <td class="num">3.6–3.9 <em>indicative</em></td>
+                                        <td>TBD</td>
+                                        <td>Intake + bake-off; pin, mirror, no egress.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Commercial platform</strong></td>
+                                        <td class="num">4.1 <em>indicative</em></td>
+                                        <td>TBD</td>
+                                        <td>Third-party risk, procurement, lock-in.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p><em>The old 4.3 is retired. The honest design range for the graph-first option is
+                                3.6–3.9; the mature baseline scores higher once the redistributable licence gate is
+                                removed. None of these are evidence — the measured column stays empty until the
+                                bake-off and golden-repo evaluation.</em></p>
+                    </section>
+
+                    <!-- ============ 03 STACK ============ -->
+                    <section class="card" id="stack">
+                        <h2><span class="num">03</span> Revised stack</h2>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Layer</th><th>Baseline</th><th>Role</th><th>Internal-use note</th></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Evidence</strong></td>
+                                        <td>SCIP · tree-sitter · Serena · Joern · Semgrep</td>
+                                        <td>Symbols, references, calls, data flow, patterns/taint</td>
+                                        <td>Serena GPL-3.0, Semgrep LGPL-2.1: run unmodified; no service exposure.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>HLD / LLD synthesis</strong></td>
+                                        <td>Structurizr · Mermaid · PlantUML (optional)</td>
+                                        <td>C4 model, rendering, richer diagrams</td>
+                                        <td>PlantUML GPL-3.0; Mermaid/Structurizr permissive.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Migration</strong></td>
+                                        <td>OpenRewrite (Apache core + MSAL recipes) · ast-grep</td>
+                                        <td>Type-aware recipes, structural rewrites</td>
+                                        <td>MSAL internal use; verify contractors/vendors; no redistribution.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Security / intake</strong></td>
+                                        <td>gitleaks · Trivy · Syft/CycloneDX</td>
+                                        <td>Secrets, IaC/dependency scan, SBOM</td>
+                                        <td>No outbound network from tool containers.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Optional graph engines</strong></td>
+                                        <td>Graphify · CodeGraph · CodeBoarding</td>
+                                        <td>Whole-repo graph, call paths, boundary proposals</td>
+                                        <td>Bake-off only; pin, mirror, isolate. Young components.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Procurement / verify</strong></td>
+                                        <td>Moderne Proprietary · Sourcegraph/AWS · CodeQL (GHAS)</td>
+                                        <td>Enterprise recipes, platforms, code queries</td>
+                                        <td>Third-party risk; do not assume available.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Avoid by default</strong></td>
+                                        <td>TruffleHog (AGPL), unmodified AGPL generally</td>
+                                        <td>—</td>
+                                        <td>Bank policy often bans AGPL; gitleaks is the default.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="callout warn">
+                            <strong>“Internal-only” is an attestation, not an assumption</strong>
+                            Write it down: own repositories, no redistribution, no managed service, no consulting
+                            exposure, tools unmodified. If contractors or vendors run the pipeline, legal must
+                            confirm they are covered. If that changes, the licence analysis changes with it.
+                        </div>
+                    </section>
+
+                    <!-- ============ 03b LANGUAGES ============ -->
+                    <section class="card" id="languages">
+                        <h2><span class="num">03b</span> Language coverage — what “all languages” really means</h2>
+                        <p>The evidence schema is language-neutral. The adapters are not. <strong>HLD</strong> is
+                            mostly language-agnostic; <strong>LLD</strong> depth is gated by the per-language
+                            symbol/indexer and framework profile.</p>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Tier</th><th>What you get</th><th>Initial languages</th><th>Requirements</th></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>A · Full HLD + LLD</strong></td>
+                                        <td>Classes/types, call paths, flows, states, seams, invariants, evidence</td>
+                                        <td>Java/Kotlin/Scala, Python, TypeScript/JavaScript, Go, Ruby, C/C++, C#</td>
+                                        <td>SCIP indexer + tree-sitter + framework profile + golden repo</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>B · HLD + structural LLD</strong></td>
+                                        <td>Modules, files, imports, routes, syntax-level calls; no precise type/state model</td>
+                                        <td>Rust, PHP, Swift, Elixir, and others with a good tree-sitter grammar</td>
+                                        <td>tree-sitter (or LSP) + manifests; call/type edges marked inferred</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>C · HLD inventory only</strong></td>
+                                        <td>Services, deploy units, data stores, contracts; no code-level LLD</td>
+                                        <td>Obscure languages, DSLs, low-code platforms</td>
+                                        <td>Manifests, IaC, API/queue contracts</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Out of scope</strong></td>
+                                        <td>Declared, not silently degraded</td>
+                                        <td>COBOL/PL-I, ABAP, RPG, mainframe until a specialized tool is procured</td>
+                                        <td>Explicit decision</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3>HLD vs LLD by tier</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Capability</th><th>Tier A</th><th>Tier B</th><th>Tier C</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Services, deploy units, data stores</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+                                    <tr><td>Runtime flows across services</td><td>Yes, with contracts/traces</td><td>Coarse</td><td>No</td></tr>
+                                    <tr><td>Classes / types / interfaces</td><td>Yes</td><td>Syntax-level</td><td>No</td></tr>
+                                    <tr><td>Call paths / blast radius</td><td>Yes</td><td>Partial, inferred</td><td>No</td></tr>
+                                    <tr><td>State machines</td><td>Yes, inferred + confirmed</td><td>Heuristic</td><td>No</td></tr>
+                                    <tr><td>Seams / invariants</td><td>Yes</td><td>Limited</td><td>No</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p>Cross-language edges — HTTP, RPC, message topics — come from contracts and runtime
+                            traces, not from either language's LLD. LLD is always per language; the HLD joins
+                            services across languages. Dynamic languages (Python, Ruby, JavaScript) and DI/reflection
+                            in Java/C# mean static call graphs can be incomplete; runtime traces are mandatory for
+                            critical flows.</p>
+
+                        <h3>Adding a language</h3>
+                        <ol>
+                            <li>Pick the indexer: official SCIP indexer, LSP, or tree-sitter fallback.</li>
+                            <li>Add a tree-sitter query pack for calls, imports, inheritance, and routes.</li>
+                            <li>Write canonicalization rules for qualified names, overloads, and generated names.</li>
+                            <li>Add a framework profile: routes, ORM, DI, queues, state idioms.</li>
+                            <li>Add fixtures and a small maintainer-labeled repo.</li>
+                            <li>Set the tier and eval thresholds; declare unsupported capabilities.</li>
+                        </ol>
+
+                        <h3>Lloyds initial profile</h3>
+                        <p>Based on Lloyds job postings and public statements, not an official group-wide
+                            inventory. The mix varies by team; confirm with the language inventory.</p>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Stack</th><th>Language</th><th>Tier</th><th>Adapter / profile</th><th>Pilot?</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>Java / Spring Boot</strong></td><td>Java (Kotlin/Scala nearby)</td><td>A</td><td><code>scip-java</code> + tree-sitter + Spring profile</td><td><strong>Recommended pilot</strong></td></tr>
+                                    <tr><td><strong>Python</strong></td><td>Python</td><td>A</td><td><code>scip-python</code> + tree-sitter; traces for dynamic flows</td><td>Second</td></tr>
+                                    <tr><td><strong>React / Next.js</strong></td><td>TypeScript / JavaScript</td><td>A (front-end profile)</td><td><code>scip-typescript</code> + tree-sitter TSX + React Router/API-client profile</td><td>Third</td></tr>
+                                    <tr><td><strong>Mainframe / core banking</strong></td><td>COBOL, JCL, CICS, DB2, IMS</td><td>C (HLD inventory only)</td><td>Mainframe metadata/JCL/DB2; specialized tool needed for LLD</td><td><strong>Separate decision</strong></td></tr>
+                                    <tr><td><strong>Data / reporting</strong></td><td>SQL, PL/SQL (Oracle, DB2)</td><td>B/C</td><td>DDL + stored-procedure extraction; schema extension needed</td><td>Later</td></tr>
+                                    <tr><td><strong>.NET (if confirmed)</strong></td><td>C#</td><td>A</td><td><code>scip-dotnet</code> + tree-sitter</td><td>Only if inventory shows volume</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="callout danger">
+                            <strong>COBOL is the one that changes the plan</strong>
+                            Lloyds publicly describes roughly 200 COBOL applications, with active mainframe hiring
+                            across payments and core banking. There is no official SCIP indexer for COBOL. Under
+                            this plan, COBOL gets <strong>HLD inventory only</strong> (services, jobs, transactions,
+                            data stores) from mainframe metadata; full LLD requires a specialized tool (e.g. IBM
+                            ADDI, AWS Transform for COBOL, OpenText/Micro Focus) or a dedicated COBOL adapter.
+                            Align with the bank's existing COBOL modernization effort rather than duplicating it.
+                        </div>
+
+                        <div class="callout">
+                            <strong>React is not a language</strong>
+                            React/Next.js is TypeScript/JavaScript with a front-end profile: components, routes,
+                            props/state, and API calls. The HLD/LLD shape is different from backend services; do not
+                            assume the backend LLD template fits unchanged.
+                        </div>
+
+                        <div class="callout warn">
+                            <strong>We do not promise “all languages”</strong>
+                            We promise a <em>coverage matrix</em>: a language is full, structural, inventory-only,
+                            or out of scope, and the output says which. Unsupported languages fail closed with
+                            coverage and unknowns — never silent degradation.
+                        </div>
+
+                        <div class="callout">
+                            <strong>Choose the pilot language from the estate, not the catalogue</strong>
+                            Start with the highest-volume Tier A language in the bank. The first vertical slice
+                            proves the pipeline on that language; other languages are added by estate priority.
+                        </div>
+                    </section>
+
+                    <!-- ============ 04 WORKSTREAMS ============ -->
+                    <section class="card" id="workstreams">
+                        <h2><span class="num">04</span> Workstreams</h2>
+
+                        <div class="mermaid-wrap">
+                            <div class="diagram-svg"><svg id="dp-diagram-3" xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 1055.1455078125 490" role="img" aria-label="Governance, evidence, and labeling start in parallel. The pilot
+                                cannot start until all three have a first deliverable." style="max-width:100%;height:auto;"><style>#dp-diagram-3{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;fill:#1c1917;}#dp-diagram-3 .error-icon{fill:#fffaf2;}#dp-diagram-3 .error-text{fill:#00050d;stroke:#00050d;}#dp-diagram-3 .edge-thickness-normal{stroke-width:2px;}#dp-diagram-3 .edge-thickness-thick{stroke-width:3.5px;}#dp-diagram-3 .edge-pattern-solid{stroke-dasharray:0;}#dp-diagram-3 .edge-pattern-dashed{stroke-dasharray:3;}#dp-diagram-3 .edge-pattern-dotted{stroke-dasharray:2;}#dp-diagram-3 .marker{fill:#5f564d;stroke:#5f564d;}#dp-diagram-3 .marker.cross{stroke:#5f564d;}#dp-diagram-3 svg{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;}#dp-diagram-3 .label{font-family:Segoe UI,Aptos,system-ui,sans-serif;color:#1c1917;}#dp-diagram-3 .cluster-label text{fill:#00050d;}#dp-diagram-3 .cluster-label span,#dp-diagram-3 p{color:#00050d;}#dp-diagram-3 .label text,#dp-diagram-3 span,#dp-diagram-3 p{fill:#1c1917;color:#1c1917;}#dp-diagram-3 .node rect,#dp-diagram-3 .node circle,#dp-diagram-3 .node ellipse,#dp-diagram-3 .node polygon,#dp-diagram-3 .node path{fill:#d7f3ef;stroke:#0f766e;stroke-width:1px;}#dp-diagram-3 .flowchart-label text{text-anchor:middle;}#dp-diagram-3 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dp-diagram-3 .node .label{text-align:center;}#dp-diagram-3 .node.clickable{cursor:pointer;}#dp-diagram-3 .arrowheadPath{fill:#0b0b0b;}#dp-diagram-3 .edgePath .path{stroke:#5f564d;stroke-width:2.0px;}#dp-diagram-3 .flowchart-link{stroke:#5f564d;fill:none;}#dp-diagram-3 .edgeLabel{background-color:#fde8db;text-align:center;}#dp-diagram-3 .edgeLabel rect{opacity:0.5;background-color:#fde8db;fill:#fde8db;}#dp-diagram-3 .labelBkg{background-color:rgba(253, 232, 219, 0.5);}#dp-diagram-3 .cluster rect{fill:#fffdf7;stroke:#d9ccb8;stroke-width:1px;}#dp-diagram-3 .cluster text{fill:#00050d;}#dp-diagram-3 .cluster span,#dp-diagram-3 p{color:#00050d;}#dp-diagram-3 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:12px;background:#fffaf2;border:1px solid #d9ccb8;border-radius:2px;pointer-events:none;z-index:100;}#dp-diagram-3 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c1917;}#dp-diagram-3 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="dp3-dp-diagram-3_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp3-dp-diagram-3_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp3-dp-diagram-3_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp3-dp-diagram-3_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp3-dp-diagram-3_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="dp3-dp-diagram-3_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M147.8,42L147.8,46.167C147.8,50.333,147.8,58.667,205.111,68.581C262.422,78.494,377.044,89.989,434.355,95.736L491.666,101.483" id="dp3-L-G1-V-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-G1 LE-V" style="fill:none;" marker-end="url(#dp3-dp-diagram-3_flowchart-pointEnd)"></path><path d="M536.708,42L536.708,46.167C536.708,50.333,536.708,58.667,536.708,66.117C536.708,73.567,536.708,80.133,536.708,83.417L536.708,86.7" id="dp3-L-G2-V-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-G2 LE-V" style="fill:none;" marker-end="url(#dp3-dp-diagram-3_flowchart-pointEnd)"></path><path d="M908.481,42L908.481,46.167C908.481,50.333,908.481,58.667,854.026,68.546C799.57,78.425,690.659,89.85,636.204,95.563L581.748,101.275" id="dp3-L-G3-V-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-G3 LE-V" style="fill:none;" marker-end="url(#dp3-dp-diagram-3_flowchart-pointEnd)"></path><path d="M536.708,120L536.708,124.167C536.708,128.333,536.708,136.667,536.708,144.117C536.708,151.567,536.708,158.133,536.708,161.417L536.708,164.7" id="dp3-L-V-S-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-V LE-S" style="fill:none;" marker-end="url(#dp3-dp-diagram-3_flowchart-pointEnd)"></path><path d="M536.708,212L536.708,216.167C536.708,220.333,536.708,228.667,536.708,236.117C536.708,243.567,536.708,250.133,536.708,253.417L536.708,256.7" id="dp3-L-S-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S LE-B" style="fill:none;" marker-end="url(#dp3-dp-diagram-3_flowchart-pointEnd)"></path><path d="M536.708,290L536.708,294.167C536.708,298.333,536.708,306.667,536.708,314.117C536.708,321.567,536.708,328.133,536.708,331.417L536.708,334.7" id="dp3-L-B-M-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-M" style="fill:none;" marker-end="url(#dp3-dp-diagram-3_flowchart-pointEnd)"></path><path d="M536.708,382L536.708,386.167C536.708,390.333,536.708,398.667,536.708,406.117C536.708,413.567,536.708,420.133,536.708,423.417L536.708,426.7" id="dp3-L-M-R-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-M LE-R" style="fill:none;" marker-end="url(#dp3-dp-diagram-3_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="dp3-flowchart-G1-18" data-node="true" data-id="dp3-G1" transform="translate(147.7998046875, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-147.7998046875" y="-21" width="295.599609375" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">1 · Governance &amp;amp; intake</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">OSS approval · SBOM · legal · model risk</tspan></text></g></g><g class="node default default flowchart-label" id="dp3-flowchart-V-19" data-node="true" data-id="dp3-V" transform="translate(536.70849609375, 106)"><rect class="basic label-container" style="" rx="0" ry="0" x="-39.7685546875" y="-14" width="79.537109375" height="28"></rect><g class="label" style="" transform="translate(0, -8)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Pilot start</tspan></text></g></g><g class="node default default flowchart-label" id="dp3-flowchart-G2-20" data-node="true" data-id="dp3-G2" transform="translate(536.70849609375, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-191.10888671875" y="-21" width="382.2177734375" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">2 · Evidence contract &amp;amp; adapters</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">schema · SCIP · tree-sitter · Serena · Joern · Semgrep</tspan></text></g></g><g class="node default default flowchart-label" id="dp3-flowchart-G3-22" data-node="true" data-id="dp3-G3" transform="translate(908.4814453125, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-130.6640625" y="-21" width="261.328125" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">3 · Golden repos &amp;amp; labels</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">3 repos · boundaries · flows · states</tspan></text></g></g><g class="node default default flowchart-label" id="dp3-flowchart-S-25" data-node="true" data-id="dp3-S" transform="translate(536.70849609375, 191)"><rect class="basic label-container" style="" rx="0" ry="0" x="-82.4140625" y="-21" width="164.828125" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">4 · HLD/LLD synthesis</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">skills · agents · critic</tspan></text></g></g><g class="node default default flowchart-label" id="dp3-flowchart-B-27" data-node="true" data-id="dp3-B" transform="translate(536.70849609375, 276)"><rect class="basic label-container" style="" rx="0" ry="0" x="-112.015625" y="-14" width="224.03125" height="28"></rect><g class="label" style="" transform="translate(0, -8)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">5 · Bake-off &amp; measured score</tspan></text></g></g><g class="node default default flowchart-label" id="dp3-flowchart-M-29" data-node="true" data-id="dp3-M" transform="translate(536.70849609375, 361)"><rect class="basic label-container" style="" rx="0" ry="0" x="-99.3828125" y="-21" width="198.765625" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">6 · Migration safety</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">oracles · one slice · canary</tspan></text></g></g><g class="node default default flowchart-label" id="dp3-flowchart-R-31" data-node="true" data-id="dp3-R" transform="translate(536.70849609375, 453)"><rect class="basic label-container" style="" rx="0" ry="0" x="-91.796875" y="-21" width="183.59375" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">7 · Enablement</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">plugin · runbooks · evals</tspan></text></g></g></g></g></g></svg></div>
+                            <p class="caption">Governance, evidence, and labeling start in parallel. The pilot
+                                cannot start until all three have a first deliverable.</p>
+                            <details class="diagram-src">
+                                <summary>Diagram source (Mermaid)</summary>
+                                <pre><code>flowchart TB
+    G1[&quot;1 · Governance &amp; intake&lt;br/&gt;OSS approval · SBOM · legal · model risk&quot;] --&gt; V[&quot;Pilot start&quot;]
+    G2[&quot;2 · Evidence contract &amp; adapters&lt;br/&gt;schema · SCIP · tree-sitter · Serena · Joern · Semgrep&quot;] --&gt; V
+    G3[&quot;3 · Golden repos &amp; labels&lt;br/&gt;3 repos · boundaries · flows · states&quot;] --&gt; V
+    V --&gt; S[&quot;4 · HLD/LLD synthesis&lt;br/&gt;skills · agents · critic&quot;]
+    S --&gt; B[&quot;5 · Bake-off &amp; measured score&quot;]
+    B --&gt; M[&quot;6 · Migration safety&lt;br/&gt;oracles · one slice · canary&quot;]
+    M --&gt; R[&quot;7 · Enablement&lt;br/&gt;plugin · runbooks · evals&quot;]</code></pre>
+                            </details>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Track</th><th>Owner</th><th>Status</th><th>Next milestone</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>1 · Governance &amp; intake</strong></td><td>Security / Legal / Platform</td><td><span class="badge warm">In progress</span></td><td>Internal-use attestation; intake tickets; SBOM;</td></tr>
+                                    <tr><td><strong>2 · Evidence contract &amp; adapters</strong></td><td>Platform engineering</td><td><span class="badge warm">In progress</span></td><td>SCIP + tree-sitter adapters on the pilot; schema freeze.</td></tr>
+                                    <tr><td><strong>3 · Golden repos &amp; labels</strong></td><td>Maintainers + archaeology lead</td><td><span class="badge warm">In progress</span></td><td>Three repos selected; labeling guide; first labels.</td></tr>
+                                    <tr><td><strong>4 · HLD/LLD synthesis</strong></td><td>Platform engineering</td><td><span class="badge gray">Next</span></td><td>HLD + LLD on the pilot; critic; coverage report.</td></tr>
+                                    <tr><td><strong>5 · Bake-off &amp; measurement</strong></td><td>Eval lead</td><td><span class="badge gray">Next</span></td><td>Baseline vs replacements; measured scorecard.</td></tr>
+                                    <tr><td><strong>6 · Migration safety</strong></td><td>Migration lead + SRE</td><td><span class="badge gray">Next</span></td><td>Oracle tooling; one slice end to end; rollback.</td></tr>
+                                    <tr><td><strong>7 · Enablement</strong></td><td>Platform engineering</td><td><span class="badge gray">Later</span></td><td>Plugin, runbooks, evals in CI, second team.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- ============ 05 PLAN ============ -->
+                    <section class="card" id="plan">
+                        <h2><span class="num">05</span> 10-week plan</h2>
+                        <p>Ten working weeks plus an intake buffer. Intake and legal are the critical path; labeling
+                            starts in week 1 because it has the longest lead time.</p>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Phase</th><th>Weeks</th><th>Outcome</th><th>Exit criteria</th></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>P0 · Premise &amp; intake</strong></td><td>1</td>
+                                        <td>Signed internal-use attestation; intake tickets; MSAL/contractor guidance; pilot + golden repos selected.</td>
+                                        <td>Attestation on file; intake started; repos and labelers named.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>P1 · Contract &amp; first slice</strong></td><td>2–3</td>
+                                        <td>SCIP + tree-sitter adapters produce validated records for one repository; merge/validator integrated.</td>
+                                        <td>Both adapters pass the contract suite; schema v1 frozen.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>P2 · Coverage</strong></td><td>4–5</td>
+                                        <td>Serena, Joern, Semgrep adapters; golden labels v1; first HLD/LLD; critic and coverage report.</td>
+                                        <td>Maintainer signs off boundaries; evidence coverage ≥ 90%; unsupported claims &lt; 5% with recall measured.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>P3 · Bake-off</strong></td><td>6</td>
+                                        <td>Baseline vs Graphify/CodeGraph/CodeBoarding; measured scorecard; keep/drop decisions.</td>
+                                        <td>Each retained tool has a measured, non-overlapping win.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>P4 · Migration</strong></td><td>7–8</td>
+                                        <td>Oracle tooling; one slice through characterization, contract, arch-diff, canary, rollback.</td>
+                                        <td>All gates green; rollback rehearsed; no behavior drift.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>P5 · Productise</strong></td><td>9–10</td>
+                                        <td>Internal plugin, runbooks, evals in CI, second team onboarding.</td>
+                                        <td>Two teams onboarded; eval regression gate enforced.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3>Milestones</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Week</th><th>Milestone</th><th>Evidence</th></tr></thead>
+                                <tbody>
+                                    <tr><td>1</td><td>Premise signed; intake and repos chosen</td><td>Attestation; intake IDs; repo list</td></tr>
+                                    <tr><td>2</td><td>SCIP adapter on pilot</td><td>Validated evidence model for one repo</td></tr>
+                                    <tr><td>3</td><td>Tree-sitter adapter + merge/validator</td><td>Contract suite green; schema v1 frozen</td></tr>
+                                    <tr><td>4</td><td>Golden labels v1; first HLD</td><td>Signed boundaries; evidence pack</td></tr>
+                                    <tr><td>5</td><td>First LLD + critic</td><td>Flows/states reviewed; coverage report</td></tr>
+                                    <tr><td>6</td><td>Bake-off + measured score</td><td>Measured scorecard; keep/drop list</td></tr>
+                                    <tr><td>7</td><td>Oracle tooling + slice plan</td><td>Characterization/contract tests; ordered slices</td></tr>
+                                    <tr><td>8</td><td>One migration slice</td><td>Canary + rollback evidence</td></tr>
+                                    <tr><td>9–10</td><td>Packaging + onboarding</td><td>Plugin, runbooks, second-team trial</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- ============ 06 FIRST 10 DAYS ============ -->
+                    <section class="card" id="first10">
+                        <h2><span class="num">06</span> First 10 working days</h2>
+                        <p>Start with the long-lead items and the first vertical slice. Do not build adapters for tools
+                            the bake-off may reject.</p>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Day</th><th>Action</th><th>Output</th></tr></thead>
+                                <tbody>
+                                    <tr><td>1</td><td>Confirm internal-only premise in writing; list baseline tools for intake.</td><td>Attestation; intake list</td></tr>
+                                    <tr><td>1–2</td><td>Select pilot repo and three golden repos; nominate maintainer labelers.</td><td>Repo list; labeler names</td></tr>
+                                    <tr><td>2–3</td><td>Open intake/SBOM tickets; ask legal about GPL/LGPL, MSAL, contractors/vendors.</td><td>Ticket IDs; legal question log</td></tr>
+                                    <tr><td>3–4</td><td>Freeze schema v1 draft; publish fixtures; confirm contract suite.</td><td>Schema v1 freeze note</td></tr>
+                                    <tr><td>4–6</td><td>Implement SCIP adapter on the pilot; validate against the schema.</td><td>First validated evidence model</td></tr>
+                                    <tr><td>6–8</td><td>Implement tree-sitter adapter; compare records; add merge/validator.</td><td>Two-adapter consistency report</td></tr>
+                                    <tr><td>8–9</td><td>Write labeling guide; label one context with the maintainer.</td><td>Labeling guide; first labels</td></tr>
+                                    <tr><td>9–10</td><td>Confirm approved model endpoint and model-risk path; shortlist migration route.</td><td>Model-risk ticket; route options</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="callout">
+                            <strong>Definition of a good first week</strong>
+                            Not code volume. It is: attestation signed, repos named, intake moving, schema frozen,
+                            and the SCIP adapter producing a record that passes the contract suite.
+                        </div>
+                    </section>
+
+                    <!-- ============ 07 BAKE-OFF ============ -->
+                    <section class="card" id="bakeoff">
+                        <h2><span class="num">07</span> Bake-off</h2>
+                        <div class="mermaid-wrap">
+                            <div class="diagram-svg"><svg id="dp-diagram-4" xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 728.390625 334" role="img" aria-label="Do not put a graph engine in the baseline while testing graph
+                                engines. Replacement and combination are different experiments." style="max-width:100%;height:auto;"><style>#dp-diagram-4{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;fill:#1c1917;}#dp-diagram-4 .error-icon{fill:#fffaf2;}#dp-diagram-4 .error-text{fill:#00050d;stroke:#00050d;}#dp-diagram-4 .edge-thickness-normal{stroke-width:2px;}#dp-diagram-4 .edge-thickness-thick{stroke-width:3.5px;}#dp-diagram-4 .edge-pattern-solid{stroke-dasharray:0;}#dp-diagram-4 .edge-pattern-dashed{stroke-dasharray:3;}#dp-diagram-4 .edge-pattern-dotted{stroke-dasharray:2;}#dp-diagram-4 .marker{fill:#5f564d;stroke:#5f564d;}#dp-diagram-4 .marker.cross{stroke:#5f564d;}#dp-diagram-4 svg{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;}#dp-diagram-4 .label{font-family:Segoe UI,Aptos,system-ui,sans-serif;color:#1c1917;}#dp-diagram-4 .cluster-label text{fill:#00050d;}#dp-diagram-4 .cluster-label span,#dp-diagram-4 p{color:#00050d;}#dp-diagram-4 .label text,#dp-diagram-4 span,#dp-diagram-4 p{fill:#1c1917;color:#1c1917;}#dp-diagram-4 .node rect,#dp-diagram-4 .node circle,#dp-diagram-4 .node ellipse,#dp-diagram-4 .node polygon,#dp-diagram-4 .node path{fill:#d7f3ef;stroke:#0f766e;stroke-width:1px;}#dp-diagram-4 .flowchart-label text{text-anchor:middle;}#dp-diagram-4 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dp-diagram-4 .node .label{text-align:center;}#dp-diagram-4 .node.clickable{cursor:pointer;}#dp-diagram-4 .arrowheadPath{fill:#0b0b0b;}#dp-diagram-4 .edgePath .path{stroke:#5f564d;stroke-width:2.0px;}#dp-diagram-4 .flowchart-link{stroke:#5f564d;fill:none;}#dp-diagram-4 .edgeLabel{background-color:#fde8db;text-align:center;}#dp-diagram-4 .edgeLabel rect{opacity:0.5;background-color:#fde8db;fill:#fde8db;}#dp-diagram-4 .labelBkg{background-color:rgba(253, 232, 219, 0.5);}#dp-diagram-4 .cluster rect{fill:#fffdf7;stroke:#d9ccb8;stroke-width:1px;}#dp-diagram-4 .cluster text{fill:#00050d;}#dp-diagram-4 .cluster span,#dp-diagram-4 p{color:#00050d;}#dp-diagram-4 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:12px;background:#fffaf2;border:1px solid #d9ccb8;border-radius:2px;pointer-events:none;z-index:100;}#dp-diagram-4 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c1917;}#dp-diagram-4 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="dp4-dp-diagram-4_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp4-dp-diagram-4_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp4-dp-diagram-4_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp4-dp-diagram-4_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp4-dp-diagram-4_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="dp4-dp-diagram-4_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M115.429,131L130.938,112.667C146.447,94.333,177.466,57.667,207.372,39.333C237.277,21,266.07,21,280.467,21L294.863,21" id="dp4-L-B-R1-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-R1" style="fill:none;" marker-end="url(#dp4-dp-diagram-4_flowchart-pointEnd)"></path><path d="M162.803,131L170.416,128C178.03,125,193.257,119,215.062,116C236.866,113,265.248,113,279.439,113L293.63,113" id="dp4-L-B-R2-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-R2" style="fill:none;" marker-end="url(#dp4-dp-diagram-4_flowchart-pointEnd)"></path><path d="M162.803,187L170.416,190C178.03,193,193.257,199,213.407,202C233.556,205,258.628,205,271.164,205L283.7,205" id="dp4-L-B-R3-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-R3" style="fill:none;" marker-end="url(#dp4-dp-diagram-4_flowchart-pointEnd)"></path><path d="M115.429,187L130.938,205.333C146.447,223.667,177.466,260.333,196.258,278.667C215.051,297,221.618,297,224.901,297L228.184,297" id="dp4-L-B-I-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-I" style="fill:none;" marker-end="url(#dp4-dp-diagram-4_flowchart-pointEnd)"></path><path d="M404.665,21L419.945,21C435.225,21,465.784,21,496.494,38.668C527.205,56.336,558.066,91.672,573.496,109.34L588.927,127.008" id="dp4-L-R1-M-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-R1 LE-M" style="fill:none;" marker-end="url(#dp4-dp-diagram-4_flowchart-pointEnd)"></path><path d="M405.898,113L420.973,113C436.047,113,466.195,113,488.304,115.685C510.414,118.37,524.484,123.74,531.519,126.425L538.553,129.11" id="dp4-L-R2-M-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-R2 LE-M" style="fill:none;" marker-end="url(#dp4-dp-diagram-4_flowchart-pointEnd)"></path><path d="M415.828,205L429.247,205C442.667,205,469.505,205,489.959,202.315C510.414,199.63,524.484,194.26,531.519,191.575L538.553,188.89" id="dp4-L-R3-M-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-R3 LE-M" style="fill:none;" marker-end="url(#dp4-dp-diagram-4_flowchart-pointEnd)"></path><path d="M471.344,297L475.51,297C479.677,297,488.01,297,507.608,279.332C527.205,261.664,558.066,226.328,573.496,208.66L588.927,190.992" id="dp4-L-I-M-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-I LE-M" style="fill:none;" marker-end="url(#dp4-dp-diagram-4_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="dp4-flowchart-B-32" data-node="true" data-id="dp4-B" transform="translate(91.7421875, 159)"><rect class="basic label-container" style="" rx="0" ry="0" x="-91.7421875" y="-28" width="183.484375" height="56"></rect><g class="label" style="" transform="translate(0, -22)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Baseline</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">SCIP + tree-sitter</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Joern for data-flow tasks</tspan></text></g></g><g class="node default default flowchart-label" id="dp4-flowchart-R1-33" data-node="true" data-id="dp4-R1" transform="translate(352.4140625, 21)"><rect class="basic label-container" style="" rx="0" ry="0" x="-52.2509765625" y="-21" width="104.501953125" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Replacement</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">+ Graphify</tspan></text></g></g><g class="node default default flowchart-label" id="dp4-flowchart-R2-35" data-node="true" data-id="dp4-R2" transform="translate(352.4140625, 113)"><rect class="basic label-container" style="" rx="0" ry="0" x="-53.484375" y="-21" width="106.96875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Replacement</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">+ CodeGraph</tspan></text></g></g><g class="node default default flowchart-label" id="dp4-flowchart-R3-37" data-node="true" data-id="dp4-R3" transform="translate(352.4140625, 205)"><rect class="basic label-container" style="" rx="0" ry="0" x="-63.4140625" y="-21" width="126.828125" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Replacement</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">+ CodeBoarding</tspan></text></g></g><g class="node default default flowchart-label" id="dp4-flowchart-I-39" data-node="true" data-id="dp4-I" transform="translate(352.4140625, 297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-118.9296875" y="-21" width="237.859375" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Incremental value</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">+ second engine only if justified</tspan></text></g></g><g class="node default default flowchart-label" id="dp4-flowchart-M-41" data-node="true" data-id="dp4-M" transform="translate(616.8671875, 159)"><rect class="basic label-container" style="" rx="0" ry="0" x="-95.5234375" y="-28" width="191.046875" height="56"></rect><g class="label" style="" transform="translate(0, -22)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Measured score</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">edge recall · boundary F1</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">flow recall · cost</tspan></text></g></g></g></g></g></svg></div>
+                            <p class="caption">Do not put a graph engine in the baseline while testing graph
+                                engines. Replacement and combination are different experiments.</p>
+                            <details class="diagram-src">
+                                <summary>Diagram source (Mermaid)</summary>
+                                <pre><code>flowchart LR
+    B[&quot;Baseline&lt;br/&gt;SCIP + tree-sitter&lt;br/&gt;Joern for data-flow tasks&quot;] --&gt; R1[&quot;Replacement&lt;br/&gt;+ Graphify&quot;]
+    B --&gt; R2[&quot;Replacement&lt;br/&gt;+ CodeGraph&quot;]
+    B --&gt; R3[&quot;Replacement&lt;br/&gt;+ CodeBoarding&quot;]
+    B --&gt; I[&quot;Incremental value&lt;br/&gt;+ second engine only if justified&quot;]
+    R1 --&gt; M[&quot;Measured score&lt;br/&gt;edge recall · boundary F1&lt;br/&gt;flow recall · cost&quot;]
+    R2 --&gt; M
+    R3 --&gt; M
+    I --&gt; M</code></pre>
+                            </details>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Experiment</th><th>Configuration</th><th>Question</th><th>Keep only if</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>Baseline</strong></td><td>SCIP + tree-sitter; Joern for data-flow tasks; Serena/Semgrep for symbols/patterns</td><td>What does the mature toolchain give us alone?</td><td>—</td></tr>
+                                    <tr><td><strong>Replacement × 3</strong></td><td>Baseline + each graph engine, one at a time</td><td>Does it beat the baseline on its own?</td><td>Measured, non-overlapping gain at acceptable cost</td></tr>
+                                    <tr><td><strong>Incremental value</strong></td><td>Baseline + a second graph engine</td><td>Is the combination worth the complexity?</td><td>Clear reason to combine; measured incremental gain</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p><strong>Fixed throughout:</strong> schema version, repository commits, golden labels,
+                            evaluation inputs. <strong>Metrics:</strong> edge recall, boundary F1 (including the messy
+                            repo), flow recall, evidence coverage, incremental cost, human correction minutes. Do not
+                            reward a tool for producing more nodes and edges.</p>
+                    </section>
+
+                    <!-- ============ 08 GOLDEN ============ -->
+                    <section class="card" id="golden">
+                        <h2><span class="num">08</span> Golden repos and labels</h2>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Repo</th><th>Why it is in the set</th><th>Maintainer labels</th><th>Owner needed by</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Clean service</td><td>Baseline correctness and evidence quality</td><td>Boundaries, top flows, state transitions</td><td>Week 1</td></tr>
+                                    <tr><td>Large monolith / monorepo</td><td>Scale, incrementality, drift</td><td>Boundaries, ownership, critical flows</td><td>Week 1</td></tr>
+                                    <tr><td>Polyglot or dynamically wired app</td><td>Blind spots: cross-language edges, DI, events</td><td>Cross-language flows, hidden couplings</td><td>Week 2</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <ul>
+                            <li>Freeze the commit SHA before labeling; labels are tied to that commit.</li>
+                            <li>Label boundaries, top 10 flows, and state transitions — not every class.</li>
+                            <li>Budget 2–4 hours per maintainer per repo for v1 labels.</li>
+                            <li>Start now: this is the longest lead time and the measured score depends on it.</li>
+                        </ul>
+                    </section>
+
+                    <!-- ============ 09 GATES ============ -->
+                    <section class="card" id="gates">
+                        <h2><span class="num">09</span> Gates and bank controls</h2>
+
+                        <div class="mermaid-wrap">
+                            <div class="diagram-svg"><svg id="dp-diagram-5" xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 479.7265625 683.640625" role="img" aria-label="The redistributable licence gate is replaced by the bank&#x27;s intake
+                                and internal-use policy. Correctness gates remain unchanged." style="max-width:100%;height:auto;"><style>#dp-diagram-5{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;fill:#1c1917;}#dp-diagram-5 .error-icon{fill:#fffaf2;}#dp-diagram-5 .error-text{fill:#00050d;stroke:#00050d;}#dp-diagram-5 .edge-thickness-normal{stroke-width:2px;}#dp-diagram-5 .edge-thickness-thick{stroke-width:3.5px;}#dp-diagram-5 .edge-pattern-solid{stroke-dasharray:0;}#dp-diagram-5 .edge-pattern-dashed{stroke-dasharray:3;}#dp-diagram-5 .edge-pattern-dotted{stroke-dasharray:2;}#dp-diagram-5 .marker{fill:#5f564d;stroke:#5f564d;}#dp-diagram-5 .marker.cross{stroke:#5f564d;}#dp-diagram-5 svg{font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:14px;}#dp-diagram-5 .label{font-family:Segoe UI,Aptos,system-ui,sans-serif;color:#1c1917;}#dp-diagram-5 .cluster-label text{fill:#00050d;}#dp-diagram-5 .cluster-label span,#dp-diagram-5 p{color:#00050d;}#dp-diagram-5 .label text,#dp-diagram-5 span,#dp-diagram-5 p{fill:#1c1917;color:#1c1917;}#dp-diagram-5 .node rect,#dp-diagram-5 .node circle,#dp-diagram-5 .node ellipse,#dp-diagram-5 .node polygon,#dp-diagram-5 .node path{fill:#d7f3ef;stroke:#0f766e;stroke-width:1px;}#dp-diagram-5 .flowchart-label text{text-anchor:middle;}#dp-diagram-5 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dp-diagram-5 .node .label{text-align:center;}#dp-diagram-5 .node.clickable{cursor:pointer;}#dp-diagram-5 .arrowheadPath{fill:#0b0b0b;}#dp-diagram-5 .edgePath .path{stroke:#5f564d;stroke-width:2.0px;}#dp-diagram-5 .flowchart-link{stroke:#5f564d;fill:none;}#dp-diagram-5 .edgeLabel{background-color:#fde8db;text-align:center;}#dp-diagram-5 .edgeLabel rect{opacity:0.5;background-color:#fde8db;fill:#fde8db;}#dp-diagram-5 .labelBkg{background-color:rgba(253, 232, 219, 0.5);}#dp-diagram-5 .cluster rect{fill:#fffdf7;stroke:#d9ccb8;stroke-width:1px;}#dp-diagram-5 .cluster text{fill:#00050d;}#dp-diagram-5 .cluster span,#dp-diagram-5 p{color:#00050d;}#dp-diagram-5 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:Segoe UI,Aptos,system-ui,sans-serif;font-size:12px;background:#fffaf2;border:1px solid #d9ccb8;border-radius:2px;pointer-events:none;z-index:100;}#dp-diagram-5 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c1917;}#dp-diagram-5 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="dp5-dp-diagram-5_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp5-dp-diagram-5_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="dp5-dp-diagram-5_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp5-dp-diagram-5_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="dp5-dp-diagram-5_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="dp5-dp-diagram-5_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M289.223,28L289.223,32.167C289.223,36.333,289.223,44.667,289.223,52.117C289.223,59.567,289.223,66.133,289.223,69.417L289.223,72.7" id="dp5-L-A-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#dp5-dp-diagram-5_flowchart-pointEnd)"></path><path d="M289.223,120L289.223,124.167C289.223,128.333,289.223,136.667,289.289,144.2C289.355,151.734,289.487,158.467,289.553,161.834L289.619,165.201" id="dp5-L-B-C-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-C" style="fill:none;" marker-end="url(#dp5-dp-diagram-5_flowchart-pointEnd)"></path><path d="M251.125,273.543L236.747,285.392C222.37,297.242,193.614,320.941,179.237,337.408C164.859,353.874,164.859,363.107,164.859,367.724L164.859,372.341" id="dp5-L-C-D-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-D" style="fill:none;" marker-end="url(#dp5-dp-diagram-5_flowchart-pointEnd)"></path><path d="M328.321,273.543L342.532,285.392C356.742,297.242,385.164,320.941,399.375,338.574C413.586,356.207,413.586,367.774,413.586,373.557L413.586,379.341" id="dp5-L-C-L-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-L" style="fill:none;" marker-end="url(#dp5-dp-diagram-5_flowchart-pointEnd)"></path><path d="M164.859,419.641L164.859,423.807C164.859,427.974,164.859,436.307,164.859,443.757C164.859,451.207,164.859,457.774,164.859,461.057L164.859,464.341" id="dp5-L-D-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-E" style="fill:none;" marker-end="url(#dp5-dp-diagram-5_flowchart-pointEnd)"></path><path d="M164.859,497.641L164.859,501.807C164.859,505.974,164.859,514.307,164.859,521.757C164.859,529.207,164.859,535.774,164.859,539.057L164.859,542.341" id="dp5-L-E-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-F" style="fill:none;" marker-end="url(#dp5-dp-diagram-5_flowchart-pointEnd)"></path><path d="M164.859,575.641L164.859,579.807C164.859,583.974,164.859,592.307,164.859,599.757C164.859,607.207,164.859,613.774,164.859,617.057L164.859,620.341" id="dp5-L-F-G-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-F LE-G" style="fill:none;" marker-end="url(#dp5-dp-diagram-5_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel" transform="translate(164.859375, 344.640625)"><g class="label" transform="translate(-12.1015625, -8)"><rect rx="0" ry="0" width="24.172428131103516" height="16.000364303588867"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">yes</tspan></text></g></g><g class="edgeLabel" transform="translate(413.5859375, 344.640625)"><g class="label" transform="translate(-40.609375, -8)"><rect rx="0" ry="0" width="81.1268539428711" height="16.000364303588867"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">no / service</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="dp5-flowchart-A-48" data-node="true" data-id="dp5-A" transform="translate(289.22265625, 14)"><rect class="basic label-container" style="" rx="0" ry="0" x="-57.2734375" y="-14" width="114.546875" height="28"></rect><g class="label" style="" transform="translate(0, -8)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Candidate tool</tspan></text></g></g><g class="node default default flowchart-label" id="dp5-flowchart-B-49" data-node="true" data-id="dp5-B" transform="translate(289.22265625, 99)"><rect class="basic label-container" style="" rx="0" ry="0" x="-127.28125" y="-21" width="254.5625" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Bank OSS intake</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">SBOM · notices · vulnerability scan</tspan></text></g></g><g class="node default default flowchart-label" id="dp5-flowchart-C-51" data-node="true" data-id="dp5-C" transform="translate(289.22265625, 240.8203125)"><polygon points="70.8203125,0 141.640625,-70.8203125 70.8203125,-141.640625 0,-70.8203125" class="label-container" transform="translate(-70.8203125,70.8203125)" style=""></polygon><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Internal use,</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">unmodified?</tspan></text></g></g><g class="node default default flowchart-label" id="dp5-flowchart-D-53" data-node="true" data-id="dp5-D" transform="translate(164.859375, 398.640625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-148.5859375" y="-21" width="297.171875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Security</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">no egress · secrets · approved endpoints</tspan></text></g></g><g class="node default default flowchart-label" id="dp5-flowchart-L-55" data-node="true" data-id="dp5-L" transform="translate(413.5859375, 398.640625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-50.140625" y="-14" width="100.28125" height="28"></rect><g class="label" style="" transform="translate(0, -8)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Legal review</tspan></text></g></g><g class="node default default flowchart-label" id="dp5-flowchart-E-57" data-node="true" data-id="dp5-E" transform="translate(164.859375, 483.640625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-70.70166015625" y="-14" width="141.4033203125" height="28"></rect><g class="label" style="" transform="translate(0, -8)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Model-risk sign-off</tspan></text></g></g><g class="node default default flowchart-label" id="dp5-flowchart-F-59" data-node="true" data-id="dp5-F" transform="translate(164.859375, 561.640625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-21.23974609375" y="-14" width="42.4794921875" height="28"></rect><g class="label" style="" transform="translate(0, -8)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Pilot</tspan></text></g></g><g class="node default default flowchart-label" id="dp5-flowchart-G-61" data-node="true" data-id="dp5-G" transform="translate(164.859375, 646.640625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-164.859375" y="-21" width="329.71875" height="42"></rect><g class="label" style="" transform="translate(0, -15)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Migration-safety gates</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">characterization · contract · arch-diff · canary</tspan></text></g></g></g></g></g></svg></div>
+                            <p class="caption">The redistributable licence gate is replaced by the bank's intake
+                                and internal-use policy. Correctness gates remain unchanged.</p>
+                            <details class="diagram-src">
+                                <summary>Diagram source (Mermaid)</summary>
+                                <pre><code>flowchart TD
+    A[&quot;Candidate tool&quot;] --&gt; B[&quot;Bank OSS intake&lt;br/&gt;SBOM · notices · vulnerability scan&quot;]
+    B --&gt; C{&quot;Internal use,&lt;br/&gt;unmodified?&quot;}
+    C --&gt;|&quot;yes&quot;| D[&quot;Security&lt;br/&gt;no egress · secrets · approved endpoints&quot;]
+    C --&gt;|&quot;no / service&quot;| L[&quot;Legal review&quot;]
+    D --&gt; E[&quot;Model-risk sign-off&quot;]
+    E --&gt; F[&quot;Pilot&quot;]
+    F --&gt; G[&quot;Migration-safety gates&lt;br/&gt;characterization · contract · arch-diff · canary&quot;]</code></pre>
+                            </details>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Gate</th><th>What it enforces</th><th>Evidence</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>OSS intake</strong></td><td>Approved software list; mirrored and pinned packages; SBOM; notices; vulnerability scan.</td><td>Intake ticket; SBOM; scan report.</td></tr>
+                                    <tr><td><strong>Internal-use attestation</strong></td><td>Own repositories only; no redistribution or managed service; tools unmodified; contractors/vendors reviewed.</td><td>Signed attestation; legal note for MSAL/GPL.</td></tr>
+                                    <tr><td><strong>Security</strong></td><td>No outbound network from tool containers; secret scan before any model call; approved model endpoints only.</td><td>Container policy; gitleaks report; endpoint allowlist.</td></tr>
+                                    <tr><td><strong>Model risk</strong></td><td>Approved model, data handling, retention, and human oversight.</td><td>Model-risk sign-off.</td></tr>
+                                    <tr><td><strong>Evidence quality</strong></td><td>Schema + semantic validation; coverage; unsupported claims &lt; 5% with recall; citation entailment sample; human boundary sign-off.</td><td>Contract suite; coverage report; critic report.</td></tr>
+                                    <tr><td><strong>Migration safety</strong></td><td>Characterization, contract/schema, architecture diff, canary, rollback, human approval for high-risk slices.</td><td>Green gates; canary metrics; rollback rehearsal.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- ============ 10 RISKS ============ -->
+                    <section class="card" id="risks">
+                        <h2><span class="num">10</span> Risks and open decisions</h2>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Risk / decision</th><th>Why it matters</th><th>Action</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>Intake is the critical path</strong></td><td>No tool can run before approval; weeks can slip.</td><td>Open tickets day 1–2; run schema work in parallel.</td></tr>
+                                    <tr><td><strong>Contractors / vendors are third parties</strong></td><td>MSAL and GPL internal-use assumptions may not cover them.</td><td>Legal question now; document who runs the pipeline.</td></tr>
+                                    <tr><td><strong>Graph engine maturity</strong></td><td>Graphify is pre-1.0 with very frequent releases; CodeGraph has a single maintainer.</td><td>Optional; pin, mirror, isolate; bake-off only.</td></tr>
+                                    <tr><td><strong>GPL tool modification</strong></td><td>Modifying GPL changes obligations; exposing as a service is a different use.</td><td>Run unmodified; isolate; legal if changes are needed.</td></tr>
+                                    <tr><td><strong>Migration route unresolved</strong></td><td>MSAL recipes vs own Apache-core recipes vs Moderne changes cost and coverage.</td><td>Shortlist in week 2; start procurement if Moderne is required.</td></tr>
+                                    <tr><td><strong>Model endpoint / model-risk delay</strong></td><td>No LLM synthesis without approval.</td><td>Start the model-risk ticket in week 1; keep deterministic stages running.</td></tr>
+                                    <tr><td><strong>Labeling effort</strong></td><td>Measured scores are meaningless without ground truth.</td><td>Budget maintainer time; start now; label the top flows only.</td></tr>
+                                    <tr><td><strong>Schema freeze too early</strong></td><td>Adapters may reveal missing fields.</td><td>Freeze after SCIP + tree-sitter consistency, not before.</td></tr>
+                                    <tr><td><strong>CodeQL licensing</strong></td><td>Private commercial use may require GitHub Advanced Security.</td><td>Verify before inclusion; keep out of baseline.</td></tr>
+                                    <tr><td><strong>Toolchain weight</strong></td><td>Too many tools for the evidence.</td><td>Baseline-first; optional engines must earn their place; nothing all-on.</td></tr>
+                                    <tr><td><strong>Language coverage is uneven</strong></td><td>LLD depth depends on indexers and framework profiles; obscure languages may be HLD-only.</td><td>Publish and enforce the coverage matrix; pick the pilot from the estate; declare out-of-scope languages.</td></tr>
+                                    <tr><td><strong>COBOL / mainframe gap</strong></td><td>~200 COBOL applications; no official SCIP indexer; current plan is HLD inventory only.</td><td>Decide specialized tool vs dedicated adapter vs out of scope; align with the existing modernization programme.</td></tr>
+                                    <tr><td><strong>SQL / PL-SQL not modelled</strong></td><td>Stored procedures and triggers are core to banking HLD/LLD and migration.</td><td>Extend the schema with procedure/trigger/view entities and DDL extraction; version the change.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3>Open decisions</h3>
+                        <ol>
+                            <li><strong>Internal-use scope:</strong> contractors/vendors, managed service, redistribution — confirm in writing.</li>
+                            <li><strong>Migration route:</strong> MSAL recipes internally, own recipes on Apache core, or Moderne procurement.</li>
+                            <li><strong>Pilot and golden repos:</strong> names, owners, labelers, commit SHAs.</li>
+                            <li><strong>Model endpoint:</strong> approved provider/model, data handling, retention.</li>
+                            <li><strong>Runtime traces:</strong> tool choice for critical flows (OpenTelemetry/eBPF/other) or declared out of scope.</li>
+                            <li><strong>PlantUML:</strong> keep for richer diagrams or stay Mermaid-only.</li>
+                            <li><strong>COBOL/mainframe scope:</strong> HLD inventory only, specialized tool procurement, or a dedicated adapter; align with the existing modernization programme.</li>
+                            <li><strong>SQL/PL-SQL depth:</strong> extend the schema for stored procedures, triggers, and views, or declare data-logic LLD out of scope.</li>
+                            <li><strong>React/TypeScript profile:</strong> decide the front-end LLD shape (components, routes, API calls) and whether it is in the first three languages.</li>
+                        </ol>
+                    </section>
+
+                    <!-- ============ 11 EXIT ============ -->
+                    <section class="card" id="exit">
+                        <h2><span class="num">11</span> Exit criteria — what “live” means</h2>
+                        <ol>
+                            <li><strong>Intake and legal pass</strong> on the baseline, including internal-use attestation, SBOM, notices, and contractor review.</li>
+                            <li><strong>Schema v1 frozen</strong> after SCIP and tree-sitter adapters produce consistent, auditable records on the pilot.</li>
+                            <li><strong>Golden-repo targets met</strong> on all three repos, including the messy one: evidence coverage, boundary F1, flow recall, unsupported claims with recall.</li>
+                            <li><strong>Bake-off decisions measured</strong> — each retained optional tool has a non-overlapping win; the rest are removed.</li>
+                            <li><strong>Model-risk sign-off</strong> and approved model endpoint in place.</li>
+                            <li><strong>One migration slice</strong> completes end to end through characterization, contract, architecture diff, canary, and rollback.</li>
+                            <li><strong>Operational readiness</strong> — runbooks, eval regression gate, on-call ownership, second team onboarded.</li>
+                        </ol>
+                        <div class="callout danger">
+                            <strong>No production gate is passed by a document</strong>
+                            Every criterion above requires evidence: a signed attestation, a passing contract
+                            suite, a measured scorecard, a signed-off HLD, or a completed slice with rollback.
+                        </div>
+                    </section>
+
+                    <!-- ============ 12 LINKS ============ -->
+                    <section class="card" id="links">
+                        <h2><span class="num">12</span> Links</h2>
+                        <ul>
+                            <li><a href="stack-decision-record.html">Stack decision record (ADR)</a> — historical decision; the licence-clean premise is superseded by this plan.</li>
+                            <li><a href="hld-lld-recovery-blueprint.html">Research blueprint</a> — tool landscape, techniques, failure modes, references.</li>
+                            <li><a href="evidence-schema.md">Evidence schema v1 contract</a> — rules, IDs, conflicts, coverage.</li>
+                            <li><a href="evidence-schema.v1.json">JSON Schema</a> · <a href="contract_tests.py">contract tests</a> · <a href="validate_evidence.py">semantic validator</a></li>
+                            <li><a href="fixtures/valid/minimal.json">Valid fixture</a> · <a href="fixtures/invalid/">Invalid fixtures</a> · <a href="canonicalization-fixtures.json">Canonicalization fixtures</a></li>
+                        </ul>
+                        <p><em>Premise: internal-only use on bank-controlled repositories. If redistribution, a managed
+                                service, or contractor-run pipelines become part of the model, the licence analysis
+                                must be revisited.</em></p>
+                    </section>
+
+                    <footer>
+                        Legacy Lens · delivery plan &amp; status · 27 October 2026 · internal-only premise.<br>
+                        Diagrams are embedded as SVG and render offline; Mermaid source is in each collapsible block.
+                    </footer>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <button class="to-top" id="toTop" type="button" aria-label="Back to top" title="Back to top">↑</button>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.addEventListener('click', function () {
+                var clone = document.documentElement.cloneNode(true);
+                clone.querySelectorAll('tr[hidden]').forEach(function (tr) { tr.removeAttribute('hidden'); });
+                var html = '<!DOCTYPE html>\n' + clone.outerHTML;
+                var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'delivery-plan-status.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+            });
+
+            var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a[href^="#"]'));
+            var byId = {};
+            tocLinks.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+
+            var sections = Array.prototype.slice.call(document.querySelectorAll('section[id], h3[id]'));
+            var visible = new Map();
+
+            if ('IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) { visible.set(entry.target.id, entry.isIntersecting); });
+                    var active = null;
+                    sections.forEach(function (s) { if (!active && visible.get(s.id)) active = s.id; });
+                    tocLinks.forEach(function (a) { a.classList.remove('active'); });
+                    if (active && byId[active]) byId[active].classList.add('active');
+                }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+                sections.forEach(function (s) { observer.observe(s); });
+            }
+
+            var toTop = document.getElementById('toTop');
+            window.addEventListener('scroll', function () {
+                toTop.classList.toggle('show', window.scrollY > 700);
+            }, { passive: true });
+            toTop.addEventListener('click', function () {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        })();
+    </script>
+</body>
+
+</html>
