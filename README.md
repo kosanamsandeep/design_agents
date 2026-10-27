@@ -9,6 +9,8 @@ TBD; this is a baseline, not a validated product.
 **Status page:** [`docs/implementation-status.html`](docs/implementation-status.html) — what was
 achieved, the last run metrics, review findings, limitations, and next steps.
 
+**Rendered docs:** <https://kosanamsandeep.github.io/design_agents/>
+
 ## What is implemented
 
 | Component | Path | State |

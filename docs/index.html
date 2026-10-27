@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legacy Lens — Documentation</title>
+    <style>
+        :root {
+            --paper: #fffaf2; --ink: #1c1917; --muted: #5f564d; --line: #d9ccb8;
+            --accent: #0f766e; --accent-soft: #d7f3ef; --warm: #c2410c;
+            --warm-soft: #fde8db; --radius: 16px;
+            --shadow: 0 18px 40px rgba(28, 25, 23, 0.08);
+            --sans: "Segoe UI", "Aptos", system-ui, sans-serif;
+            --mono: "Cascadia Mono", "Consolas", monospace;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; font-family: var(--sans); color: var(--ink); line-height: 1.65;
+            background: radial-gradient(circle at top left, rgba(15,118,110,.12), transparent 28%),
+                        radial-gradient(circle at top right, rgba(194,65,12,.13), transparent 24%),
+                        linear-gradient(180deg,#faf5ec,#f4efe6);
+        }
+        .shell { width: min(1080px, calc(100% - 32px)); margin: 0 auto; }
+        header { padding: 22px 0 14px; border-bottom: 1px solid var(--line); background: rgba(255,250,242,.9); }
+        .brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 700; color: var(--ink); text-decoration: none; }
+        .mark { width: 42px; height: 42px; display: inline-grid; place-items: center; border-radius: 12px;
+                background: linear-gradient(135deg, var(--accent), #115e59); color: #fff; box-shadow: var(--shadow); }
+        .brand small { display: block; color: var(--muted); font-size: .72rem; font-weight: 600; }
+        main { padding: 30px 0 70px; }
+        .hero { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+                padding: 30px 34px; box-shadow: var(--shadow); margin-bottom: 22px; }
+        .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .72rem; color: var(--warm); font-weight: 700; margin: 0; }
+        h1 { margin: 8px 0 10px; font-size: 2rem; line-height: 1.2; }
+        .hero p { color: var(--muted); margin: 8px 0; }
+        .kpis { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; margin: 18px 0 4px; }
+        .kpi { background: #fffdf7; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+        .kpi .v { color: var(--accent); font-weight: 800; font-size: 1.2rem; }
+        .kpi .l { color: var(--muted); font-size: .76rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 16px; }
+        .tile { display: block; text-decoration: none; color: var(--ink); background: var(--paper);
+                border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px;
+                box-shadow: var(--shadow); transition: transform .1s ease, border-color .1s ease; }
+        .tile:hover { transform: translateY(-2px); border-color: var(--accent); }
+        .tile h3 { margin: 0 0 6px; color: var(--accent); font-size: 1rem; }
+        .tile p { margin: 0; color: var(--muted); font-size: .88rem; }
+        .tag { display: inline-block; font-size: .65rem; letter-spacing: .08em; text-transform: uppercase;
+               color: var(--warm); font-weight: 700; margin-bottom: 6px; }
+        .note { background: var(--warm-soft); border-left: 4px solid var(--warm); border-radius: 8px;
+                padding: 12px 15px; margin-top: 18px; color: #6b3e1e; }
+        footer { text-align: center; color: var(--muted); font-size: .82rem; padding: 26px 0; }
+        code { font-family: var(--mono); background: #efe7d6; padding: 1px 6px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="shell">
+            <a class="brand" href="index.html">
+                <span class="mark">LL</span>
+                <span>Legacy Lens<small>evidence-first HLD/LLD recovery &amp; migration agents</small></span>
+            </a>
+        </div>
+    </header>
+    <main class="shell">
+        <section class="hero">
+            <p class="eyebrow">Public documentation · first vertical slice</p>
+            <h1>Legacy Lens — results and plans</h1>
+            <p>Recovering HLD and LLD from an existing codebase with an evidence-first pipeline,
+                deterministic baselines, and read-only synthesis roles. The first slice runs end to end
+                on Apache RocketMQ.</p>
+            <div class="kpis">
+                <div class="kpi"><div class="v">38,789</div><div class="l">merged entities</div></div>
+                <div class="kpi"><div class="v">109,647</div><div class="l">merged edges</div></div>
+                <div class="kpi"><div class="v">16</div><div class="l">HLD containers</div></div>
+                <div class="kpi"><div class="v">34 / 10</div><div class="l">namesrv LLD classes / flows</div></div>
+                <div class="kpi"><div class="v">~44 s</div><div class="l">pipeline run (index separate)</div></div>
+            </div>
+            <div class="note"><strong>Not a production design service yet.</strong> Boundaries need
+                maintainer sign-off; golden labels and measured F1 are missing; the synthesis agents are
+                review-only.</div>
+        </section>
+
+        <div class="grid">
+            <a class="tile" href="implementation-status.html">
+                <span class="tag">Start here</span>
+                <h3>Implementation status</h3>
+                <p>What was achieved, last-run metrics, agent review findings, limitations, and next steps.</p>
+            </a>
+            <a class="tile" href="delivery-plan-status.html">
+                <span class="tag">Plan</span>
+                <h3>Delivery plan &amp; status</h3>
+                <p>Internal-only premise, mature-tools baseline, bake-off, 10-week plan, and bank controls.</p>
+            </a>
+            <a class="tile" href="stack-decision-record.html">
+                <span class="tag">Decision</span>
+                <h3>Stack decision record</h3>
+                <p>Why the stack was chosen, what was rejected, and the licence/MSAL corrections.</p>
+            </a>
+            <a class="tile" href="hld-lld-recovery-blueprint.html">
+                <span class="tag">Research</span>
+                <h3>Research blueprint</h3>
+                <p>Tool landscape, recovery techniques, migration failure modes, and references.</p>
+            </a>
+            <a class="tile" href="https://github.com/kosanamsandeep/design_agents/tree/main/artifacts">
+                <span class="tag">Results</span>
+                <h3>Artifacts</h3>
+                <p>Browsable HLD/LLD JSON and compressed evidence models, SCIP index, and merged graph.</p>
+            </a>
+            <a class="tile" href="https://github.com/kosanamsandeep/design_agents/tree/main/testdata/rocketmq">
+                <span class="tag">Test data</span>
+                <h3>RocketMQ snapshot</h3>
+                <p>Vendored 5.5.1 source snapshot with <code>.lens-commit</code> provenance.</p>
+            </a>
+            <a class="tile" href="https://github.com/kosanamsandeep/design_agents/blob/main/README.md">
+                <span class="tag">Run it</span>
+                <h3>README &amp; installations</h3>
+                <p>Commands, pinned tool versions, and the reproduction paths.</p>
+            </a>
+            <a class="tile" href="https://github.com/kosanamsandeep/design_agents/blob/main/docs/evidence-schema.md">
+                <span class="tag">Contract</span>
+                <h3>Evidence schema</h3>
+                <p>Stable IDs, canonicalization, conflict resolution, coverage, and JSON Schema.</p>
+            </a>
+        </div>
+        <footer>Legacy Lens · 27 Oct 2026 · <a href="https://github.com/kosanamsandeep/design_agents">GitHub</a></footer>
+    </main>
+</body>
+</html>
